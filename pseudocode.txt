@@ -1,0 +1,37 @@
+SplitPay logic Pseudocode
+
+ 1. Create a dicitonary called totals -> to track how much each person owes
+ 2. Loop through ecah purchase in the purchases list:
+       a. Note who paid (purchase["paid_by"])
+       b. Loop through each item in purchase["items"]:
+               i. Get item price and owner(s)
+               ii. Split the price equally among all owners
+               iii. For each owner:
+                   -Add their share to totals[owner]
+
+       c. After processing all items in teh purchase:
+               i. Add the full amount of the purchase to totals[paid_by]
+               (as a negative number since they already paid)
+ 3. After all purchases are processed:
+       a. Anyone with a positive total owes money
+       b. Anyone with a negative total is owed money
+
+ 4. Show the results:
+    - Print each person’s name and their balance
+    - Positive = they owe
+    - Negative = they are owed
+
+
+
+
+
+Calculating totals for each person
+#1. Start with total for each person = 0
+#2. Loop through each item:
+#   - If item belongs to one person → add full price to their total
+#   - If item is split → divide price by number of people and add share to each
+#3. Figure out who paid (in this case: Kevin = $100)
+#4. For each person:
+#   - Amount they owe = their total - amount they paid
+#5. If amount is negative → they are owed money
+#   If amount is positive → they owe that amount

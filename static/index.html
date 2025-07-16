@@ -1,0 +1,26 @@
+<!-- static/index.html -->
+<!DOCTYPE html>
+<html>
+<head>
+  <title>SplitPay</title>
+</head>
+<body>
+  <h1>🧾 SplitPay Calculator</h1>
+
+  <form id="split-form">
+    <label for="payer">Who paid?</label>
+    <input type="text" id="payer" name="payer" required><br><br>
+
+    <label>Items (name, price, owners comma-separated)</label><br>
+    <textarea id="items" rows="6" cols="50" placeholder="Burger, 12, Kevin&#10;Pizza, 20, Kevin, Julie&#10;Drinks, 10, Julie"></textarea><br><br>
+
+    <button type="submit">Calculate</button>
+  </form>
+
+  <h2>Results:</h2>
+  <pre id="results"></pre>
+
+console.log("SplitPay script loaded");
+  <script src="static/script.js"></script>
+</body>
+</html>
