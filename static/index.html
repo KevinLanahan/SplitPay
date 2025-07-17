@@ -1,26 +1,49 @@
-<!-- static/index.html -->
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
   <title>SplitPay</title>
+  <link rel="stylesheet" href="/static/static.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600&display=swap');
+  </style>
 </head>
 <body>
-  <h1>🧾 SplitPay Calculator</h1>
+  <div class="top-nav">
+    <div class="logo">SplitPay</div>
+    <div class="nav-links">
+      <a href="#">Home</a>
+      <a href="#">Profile</a>
+      <a href="#">Settings</a>
+    </div>
+    <div class="auth-buttons">
+      <a href="#">Log in</a>
+      <a href="#" class="get-btn">Get SplitPay</a>
+    </div>
+  </div>
 
-  <form id="split-form">
-    <label for="payer">Who paid?</label>
-    <input type="text" id="payer" name="payer" required><br><br>
+  <div class="page-content">
+    <div class="form-section">
+      <h2>Split a Payment</h2>
 
-    <label>Items (name, price, owners comma-separated)</label><br>
-    <textarea id="items" rows="6" cols="50" placeholder="Burger, 12, Kevin&#10;Pizza, 20, Kevin, Julie&#10;Drinks, 10, Julie"></textarea><br><br>
+      <label for="paid-by">Who paid?</label>
+      <input type="text" id="paid-by" placeholder="Enter name"><br><br>
 
-    <button type="submit">Calculate</button>
-  </form>
+      <label for="items">Items (name, price, owners comma-separated)</label><br>
+      <textarea id="items" rows="5" placeholder="Pizza, 18, Name 1, Name 2"></textarea><br><br>
 
-  <h2>Results:</h2>
-  <pre id="results"></pre>
+      <button onclick="calculateSplit()">Calculate</button>
 
-console.log("SplitPay script loaded");
+      <h3>Results:</h3>
+      <pre id="result"></pre>
+    </div>
+
+    <div class="placeholder-section">
+      <!-- Leave this blank for now -->
+    </div>
+  </div>
+
   <script src="static/script.js"></script>
 </body>
+
 </html>

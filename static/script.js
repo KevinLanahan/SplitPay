@@ -1,5 +1,5 @@
-// static/script.js
-console.log("SplitPay script loaded");
+
+
 document.getElementById("split-form").addEventListener("submit", function (e) {
     e.preventDefault();
   
