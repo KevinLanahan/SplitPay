@@ -1,0 +1,71 @@
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600&display=swap');
+
+body {
+  font-family: 'Open Sans', sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #e6f0ff;
+}
+
+.top-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: white;
+  padding: 20px 40px;
+  border-bottom: 1px solid #ccc;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.nav-left .app-logo {
+  color: #007bff;
+    font-weight: 600;
+    font-size: 28px;
+    font-style: italic;
+    padding-left: 24px;
+    font-family: 'Open Sans', sans-serif;
+}
+
+.nav-center a,
+.nav-right a {
+  margin: 0 12px;
+  text-decoration: none;
+  color: #1a1a1a;
+  font-weight: 500;
+}
+
+.nav-center a:hover,
+.nav-right a:hover {
+  color: #007bff;
+}
+
+.friends-container {
+  max-width: 600px;
+  margin: 50px auto;
+  background-color: white;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.friends-container h2,
+.friends-container h3 {
+  color: #007bff;
+}
+
+.friends-container ul {
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.friends-container li {
+  margin-bottom: 12px;
+}
+
+.search-result {
+  background-color: #f0f8ff;
+  border: 1px solid #bcd;
+  padding: 10px;
+  margin-top: 10px;
+  border-radius: 6px;
+}

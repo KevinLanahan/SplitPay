@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Friends - SplitPay</title>
+  <link rel="stylesheet" href="/static/friends.css" />
+</head>
+<body>
+  <!-- 🟦 Navigation Bar -->
+  <div class="top-nav">
+    <div class="nav-left">
+      <span class="app-logo">SplitPay</span>
+    </div>
+
+    <div class="nav-center">
+      <a href="{{ url_for('home') }}">Home</a>
+      <a href="{{ url_for('friends') }}">Friends</a>
+    </div>
+
+    <div class="nav-right">
+      <a href="{{ url_for('logout') }}">Log out</a>
+    </div>
+  </div>
+
+  <div class="friends-container">
+    <h2>Your Friends</h2>
+    {% if friends %}
+      <ul>
+        {% for friend in friends %}
+          <li>{{ friend.full_name }} ({{ friend.username }})</li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>You have no friends added yet.</p>
+    {% endif %}
+
+    <h3>Send a Friend Request</h3>
+    <form method="POST">
+      <input type="text" name="search_username" placeholder="Search by username" required />
+      <button type="submit">Search</button>
+    </form>
+
+    {% if search_result %}
+      <div class="search-result">
+        <p>Found user: {{ search_result.full_name }} ({{ search_result.username }})</p>
+        <form method="POST">
+          <input type="hidden" name="send_request_to_id" value="{{ search_result.id }}" />
+          <button type="submit">Send Request</button>
+        </form>
+      </div>
+    {% endif %}
+
+    <h3>Pending Friend Requests</h3>
+    {% if pending_requests %}
+      <ul>
+        {% for request in pending_requests %}
+          <li>
+            {{ request.from_user.full_name }} ({{ request.from_user.username }})
+            <form action="{{ url_for('accept_request', request_id=request.id) }}" method="post" style="display:inline;">
+              <button type="submit">Accept</button>
+            </form>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>No pending requests.</p>
+    {% endif %}
+  </div>
+</body>
+</html>

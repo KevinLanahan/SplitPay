@@ -99,7 +99,7 @@ body {
   
   /* Left: Form */
   .form-section {
-    flex: 0 0 58%;
+    flex: 0 0 50%;
     background: #ffffff;
     padding: 30px;
     border-radius: 12px;
@@ -150,3 +150,39 @@ body {
     font-style: italic;
   }
   
+
+  .transaction-history {
+    flex: 0 0 35%;
+    display: flex;
+    flex-direction: column; /* Stack children vertically */
+    gap: 30px;               /* Space between the stacked panels */
+    padding-left: 40px;
+    padding-right: 20px;
+  }
+  
+  .history-panel, .receipt-upload-panel {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  .history-panel h3, .receipt-upload-panel h3 {
+    margin-top: 0;
+    font-size: 20px;
+    color: #007bff;
+  }
+  
+  #history-list {
+    list-style: none;
+    padding-left: 0;
+    margin: 0;
+  }
+  
+  #history-list li {
+    margin-bottom: 10px;
+    font-size: 14px;
+    color: #444;
+  }
+
+ 
