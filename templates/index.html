@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <title>SplitPay.com</title>
-  <link rel="stylesheet" href="/static/static.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='static.css') }}" />
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600&display=swap');
   </style>
@@ -12,13 +13,11 @@
   <!-- Navigation Bar -->
   <div class="top-nav">
     <div class="logo">SplitPay</div>
-    
     <div class="nav-links">
       <a href="/">Home</a>
-      <a href="#">Profile</a>
+      <a href="/profile">Profile</a>
       <a href="/friends">Friends</a>
     </div>
-  
     <div class="auth-buttons">
       {% if 'user_id' in session %}
         <a href="/logout">Log out</a>
@@ -32,45 +31,80 @@
   <!-- Page Main Content -->
   <div class="page-content">
     <div class="form-section">
-      <h2>Split a Payment</h2>
-    
-      <form id="split-form">
-        <label for="payer">Who paid?</label>
-        <input type="text" id="payer" placeholder="Enter name" required /><br /><br />
-    
-        <label for="items">Items (name, price, owners comma-separated)</label><br />
-        <textarea id="items" rows="5" placeholder="Item, Cost, Name 1, Name 2" required></textarea><br /><br />
-    
-        <button type="submit">Calculate</button>
-      </form>
-    
-      <h3>Results:</h3>
-      <pre id="results"></pre>
+      <!-- 🧭 Tab Navigation -->
+      <div class="tab-buttons">
+        <button class="tab-button active" onclick="showTab('photo-tab', event)">Receipt Upload</button>
+        <button class="tab-button" onclick="showTab('manual-tab', event)">Manual Entry</button>
+      </div>
+
+      <!-- 📸 Receipt Upload Tab -->
+      <div id="photo-tab" class="tab-content active">
+        <h2>Upload Your Receipt</h2>
+        <p>Use your camera or upload a photo of a receipt.</p>
+
+        <form id="photo-form" enctype="multipart/form-data">
+          <label for="receipt-upload">Upload a file</label><br />
+          <input type="file" name="receipt" id="receipt-upload" accept="image/*" /><br /><br />
+          <button type="submit">Analyze Receipt</button>
+        </form>
+
+        <div id="results"></div>
+      </div>
+
+      <!-- ✍️ Manual Entry Tab -->
+      <div id="manual-tab" class="tab-content">
+        <h2>✍️ Manual Entry</h2>
+        <form id="manual-form">
+          <!-- Who paid dropdown -->
+          <label for="manual-payer"><strong>Who paid?</strong></label><br>
+          <select id="manual-payer" required style="padding: 5px; font-family: 'Open Sans', sans-serif; font-size: 14px; margin-bottom: 15px;">
+            <!-- Populated by JS -->
+          </select>
+      
+          <!-- Item inputs will go here -->
+          <div id="manual-items" style="margin-bottom: 12px;"></div>
+      
+          <!-- Add item button -->
+          <button type="button" id="add-manual-item" class="add-btn">+ Add Item</button>
+      
+          <!-- Total -->
+          <div id="manual-total" style="margin-top: 10px; font-weight: bold;"></div>
+      
+          <!-- Submit button -->
+          <button type="submit" style="margin-top: 16px;">Calculate Split</button>
+        </form>
+      
+        <div id="manual-results" style="margin-top: 20px;"></div>
+      </div>
+      
     </div>
 
+    <!-- Transaction History -->
     <div class="transaction-history">
       <div class="history-panel">
         <h3>Transaction History</h3>
         <ul id="history-list">
           {% for txn in transactions %}
             <li>
-              {{ 'You paid' if txn.payer == user_email else txn.payer + ' paid you' }} 
+              {{ 'You paid' if txn.payer == user_email else txn.payer + ' paid you' }}
               ${{ "%.2f"|format(txn.amount) }} on {{ txn.date }}
             </li>
           {% else %}
             <li>No transactions yet</li>
           {% endfor %}
-        </ul>
-      </div>
-      
-      <div class="receipt-upload-panel">
-        <h3>Upload Receipt</h3>
-        <input type="file" id="receipt-input" accept="image/*">
-        <p style="font-size: 14px; opacity: 0.7;">(Coming soon: Automatically scan receipt details!)</p>
+        </ul>        
       </div>
     </div>
   </div>
+<!-- Define user + friends from Flask for script.js -->
+<script>
+  window.manualUser = "{{ user_email }}";
+  window.manualFriends = {{ friend_names | tojson }};
+</script>
 
-  <script src="static/script.js"></script>
+<!-- Then load your scripts -->
+<script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+
 </body>
 </html>

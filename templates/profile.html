@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>{{ user.full_name }}'s Profile - SplitPay</title>
+  <link rel="stylesheet" href="/static/profile.css" />
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600&display=swap');
+    @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
+  </style>
+</head>
+<body>
+  <!-- 🟦 Navigation Bar -->
+  <div class="top-nav">
+    <div class="logo">SplitPay</div>
+  
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/profile">Profile</a>
+      <a href="/friends">Friends</a>
+    </div>
+  
+    <div class="auth-buttons">
+      <a href="/logout">Log out</a>
+    </div>
+  </div>
+
+  <!-- 🧑 Profile Info -->
+  <div class="profile-container">
+    <div class="profile-card">
+      <div class="profile-pic-container">
+        {% if user.profile_pic %}
+          <img src="{{ url_for('static', filename='profile_pics/' ~ user.profile_pic) }}" alt="Profile Picture" class="profile-pic" />
+        {% else %}
+          <img src="{{ url_for('static', filename='profile_pics/default.jpg') }}" alt="Default Profile Picture" class="profile-pic" />
+        {% endif %}
+        
+        <!-- Camera Icon Overlay -->
+        <div class="camera-icon" onclick="toggleDropdown()">
+          <i class="fas fa-camera"></i>
+        </div>
+
+        <!-- Hidden Dropdown Menu -->
+        <div class="dropdown-menu" id="dropdown">
+          <form method="POST" enctype="multipart/form-data">
+            <button type="button" onclick="document.getElementById('profile_pic').click()">Change Photo</button>
+            <input type="file" id="profile_pic" name="profile_pic" accept="image/*" onchange="this.form.submit()" hidden />
+          </form>
+          
+          <form action="{{ url_for('remove_photo') }}" method="POST">
+            <button type="submit">Remove Photo</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="profile-info">
+        <h2>{{ user.full_name }}</h2>
+        <p>@{{ user.username }}</p>
+      </div>
+    </div>
+
+    <!-- 📄 Transactions -->
+    <div class="transactions-card">
+      <h3>Recent Transactions</h3>
+      {% if transactions %}
+        <ul>
+          {% for txn in transactions %}
+            <li>{{ txn.description }} - ${{ "%.2f"|format(txn.amount) }} on {{ txn.date }}</li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p>No recent transactions.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='profile.js') }}"></script>
+
+</body>
+</html>
