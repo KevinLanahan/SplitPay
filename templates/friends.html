@@ -3,78 +3,105 @@
 <head>
   <meta charset="UTF-8" />
   <title>Friends - SplitPay</title>
-  <link rel="stylesheet" href="/static/friends.css" />
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Noto+Sans:wght@400;500;700;900&display=swap" />
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600&display=swap');
+    body {
+      font-family: Manrope, 'Noto Sans', sans-serif;
+      background-color: #f8fcfa;
+    }
   </style>
-<body>
-  <div class="top-nav">
-    <div class="logo">SplitPay</div>
-  
-    <div class="nav-links">
-      <a href="/">Home</a>
-      <a href="/profile">Profile</a>
-      <a href="/friends">Friends</a>
-      <a href="/billing">Billing</a>
-      <a href="/my_invites">Group Invites</a>
-
+</head>
+<body class="min-h-screen flex flex-col">
+  <!-- 🟢 Navbar (Consistent with profile/home) -->
+  <header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-b-[#e6f4ef] px-10 py-3">
+    <div class="flex items-center gap-4 text-[#0c1c17]">
+      <div class="size-4">
+        <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path fill-rule="evenodd" clip-rule="evenodd" d="M24 4H42V17.3333V30.6667H24V44H6V30.6667V17.3333H24V4Z" fill="currentColor"></path>
+        </svg>
+      </div>
+      <h2 class="text-[#0c1c17] text-lg font-bold tracking-tight">SplitPay</h2>
     </div>
-  
-    <div class="auth-buttons">
-      <a href="/logout">Log out</a>
+    <div class="flex items-center gap-8">
+      <nav class="flex gap-9 text-sm font-medium text-[#0c1c17]">
+        <a href="/">Home</a>
+        <a href="/profile">Profile</a>
+        <a href="/friends">Friends</a>
+        <a href="/billing">Billing</a>
+        <a href="/my_invites">Group Invites</a>
+      </nav>
+      <div class="flex items-center gap-4">
+        <!-- Bell Icon -->
+        <button class="h-10 w-10 rounded-full bg-[#e6f4ef] flex items-center justify-center text-[#0c1c17]">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" fill="currentColor" viewBox="0 0 256 256">
+            <path d="M221.8,175.94C216.25,166.38,208,139.33,208,104a80,80,0,1,0-160,0c0,35.34-8.26,62.38-13.81,71.94A16,16,0,0,0,48,200H88.81a40,40,0,0,0,78.38,0H208a16,16,0,0,0,13.8-24.06ZM128,216a24,24,0,0,1-22.62-16h45.24A24,24,0,0,1,128,216Z" />
+          </svg>
+        </button>
+        <!-- Profile Pic Placeholder -->
+        <div class="rounded-full h-10 w-10 bg-cover bg-center" style="background-image: url('{{ url_for('static', filename='profile_pics/' ~ (user.profile_pic if user.profile_pic else 'default.jpg')) }}');"></div>
+      </div>
     </div>
-  </div>
+  </header>
 
-  <div class="friends-container">
-    <h2>Your Friends</h2>
+  <!-- 👥 Friends Section -->
+  <main class="flex flex-col max-w-3xl w-full mx-auto py-10 px-6">
+    <h2 class="text-[32px] font-bold text-[#0c1c17] mb-6">Friends</h2>
+
+    <!-- Friend List -->
+    <h3 class="text-xl font-bold text-[#0c1c17] mb-2">Your Friends</h3>
     {% if friends %}
-      <ul>
+      <ul class="space-y-4 mb-8">
         {% for friend in friends %}
-        <li class="friend-item">
-          <img
-            src="{{ url_for('static', filename='profile_pics/' ~ (friend.profile_pic if friend.profile_pic else 'default.jpg')) }}"
-            alt="Profile Picture"
-            class="friend-pic"
-          />
-          <span>{{ friend.full_name }} ({{ friend.username }})</span>
+        <li class="flex items-center gap-4 bg-[#f8fcfa] px-4 py-3 rounded shadow-sm border">
+          <img src="{{ url_for('static', filename='profile_pics/' ~ (friend.profile_pic if friend.profile_pic else 'default.jpg')) }}" alt="Profile Picture" class="h-14 w-14 rounded-full object-cover" />
+          <div>
+            <p class="text-[#0c1c17] font-medium">{{ friend.full_name }}</p>
+            <p class="text-[#46a080] text-sm">@{{ friend.username }}</p>
+          </div>
         </li>
-      {% endfor %}
+        {% endfor %}
       </ul>
     {% else %}
-      <p>You have no friends added yet.</p>
+      <p class="text-[#888] mb-6">You have no friends added yet.</p>
     {% endif %}
 
-    <h3>Send a Friend Request</h3>
-    <form method="POST">
-      <input type="text" name="search_username" placeholder="Search by username" required />
-      <button type="submit">Search</button>
+    <!-- Search + Request -->
+    <h3 class="text-xl font-bold text-[#0c1c17] mb-2">Send a Friend Request</h3>
+    <form method="POST" class="flex flex-col sm:flex-row gap-3 mb-8">
+      <input type="text" name="search_username" placeholder="Search by username" required class="form-input rounded-lg bg-[#e6f4ef] px-4 py-2 w-full sm:w-auto flex-grow" />
+      <button type="submit" class="bg-[#019863] text-white rounded-lg px-4 py-2 text-sm font-semibold">Search</button>
     </form>
 
     {% if search_result %}
-      <div class="search-result">
-        <p>Found user: {{ search_result.full_name }} ({{ search_result.username }})</p>
+      <div class="bg-white rounded border p-4 mb-6">
+        <p class="mb-2">Found user: <strong>{{ search_result.full_name }}</strong> (@{{ search_result.username }})</p>
         <form method="POST">
           <input type="hidden" name="send_request_to_id" value="{{ search_result.id }}" />
-          <button type="submit">Send Request</button>
+          <button type="submit" class="bg-[#e6f4ef] text-[#0c1c17] rounded px-4 py-2 text-sm font-medium">Send Request</button>
         </form>
       </div>
     {% endif %}
 
-    <h3>Pending Friend Requests</h3>
+    <!-- Pending Requests -->
+    <h3 class="text-xl font-bold text-[#0c1c17] mb-2">Pending Friend Requests</h3>
     {% if pending_requests %}
-      <ul>
+      <ul class="space-y-4">
         {% for request in pending_requests %}
-          <li>
-            {{ request.from_user.full_name }} ({{ request.from_user.username }})
-            <form action="{{ url_for('accept_request', request_id=request.id) }}" method="post" style="display:inline;">
-              <button type="submit">Accept</button>
-            </form>
-          </li>
+        <li class="flex justify-between items-center bg-[#f8fcfa] px-4 py-3 rounded border">
+          <div>
+            <p class="text-[#0c1c17] font-medium">{{ request.from_user.full_name }}</p>
+            <p class="text-[#46a080] text-sm">@{{ request.from_user.username }}</p>
+          </div>
+          <form action="{{ url_for('accept_request', request_id=request.id) }}" method="post">
+            <button type="submit" class="bg-[#e6f4ef] text-[#0c1c17] px-4 py-2 rounded text-sm font-medium">Accept</button>
+          </form>
+        </li>
         {% endfor %}
       </ul>
     {% else %}
-      <p>No pending requests.</p>
+      <p class="text-[#888]">No pending requests.</p>
     {% endif %}
-  </div>
+  </main>
 </body>
 </html>

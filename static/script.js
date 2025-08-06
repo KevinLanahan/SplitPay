@@ -59,25 +59,43 @@ document.addEventListener("DOMContentLoaded", () => {
   addItemBtn?.addEventListener("click", () => {
     const name = itemNameInput.value.trim();
     const price = parseFloat(itemPriceInput.value);
-    const owners = Array.from(ownerSelect.selectedOptions).map(o => o.value);
+  
+    const owners = Array.from(ownerSelect.selectedOptions).map(o => ({
+      email: o.value,
+      name: o.textContent
+    }));
+  
     if (!name || isNaN(price) || price <= 0 || owners.length === 0) {
       alert("Please enter item name, valid price, and at least one owner.");
       return;
     }
+  
     manualItems.push({ name, price, owners });
+  
     const li = document.createElement("li");
     li.className = "flex justify-between items-center bg-white p-2 rounded border text-sm";
-    li.innerHTML = `<span><strong>${name}</strong> - $${price.toFixed(2)}</span><span>${owners.join(", ")}</span>`;
+    li.innerHTML = `<span><strong>${name}</strong> - $${price.toFixed(2)}</span><span>${owners.map(o => o.name).join(", ")}</span>`;
     manualItemsList.appendChild(li);
+  
     itemNameInput.value = "";
     itemPriceInput.value = "";
     ownerSelect.selectedIndex = -1;
     updateRunningTotal();
   });
+  
 
   submitManualBtn?.addEventListener("click", async () => {
     if (manualItems.length === 0) return alert("Please add at least one item.");
-    const payload = { paid_by: userEmail, items: manualItems };
+  
+    const payload = {
+      paid_by: userEmail,
+      items: manualItems.map(item => ({
+        name: item.name,
+        price: item.price,
+        owners: item.owners.map(o => o.email)
+      }))
+    };
+  
     try {
       const res = await fetch("/calculate", {
         method: "POST",
@@ -89,6 +107,9 @@ document.addEventListener("DOMContentLoaded", () => {
         resultsDiv.innerHTML = `<p class="text-red-600 font-semibold">Error: ${data.error}</p>`;
       } else {
         const emailToName = { [userEmail]: userFullName };
+        manualItems.forEach(item =>
+          item.owners.forEach(o => (emailToName[o.email] = o.name))
+        );
         renderResults(data.reimbursements, userEmail, userFullName, emailToName);
       }
     } catch (err) {
@@ -96,6 +117,7 @@ document.addEventListener("DOMContentLoaded", () => {
       resultsDiv.innerHTML = `<p class="text-red-600 font-semibold">Something went wrong.</p>`;
     }
   });
+  
 
   uploadForm?.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -147,7 +169,11 @@ document.addEventListener("DOMContentLoaded", () => {
           if (!match) return;
           const name = match[1].trim();
           const price = parseFloat(match[2]);
-          const owners = Array.from(li.querySelector("select").selectedOptions).map(o => o.value);
+          const owners = Array.from(ownerSelect.selectedOptions).map(o => ({
+            email: o.value,
+            name: o.textContent
+          }));
+          
           if (owners.length > 0) items.push({ name, price, owners });
         });
         if (items.length === 0) return alert("Please assign at least one owner to each item.");
@@ -156,7 +182,15 @@ document.addEventListener("DOMContentLoaded", () => {
         document.querySelectorAll("#receipt-paid-by option").forEach(opt => {
           nameLookup[opt.value] = opt.textContent;
         });
-        const payload = { paid_by: paidBy, items, name_lookup: nameLookup };
+        const payload = {
+          paid_by: userEmail,
+          items: manualItems.map(item => ({
+            name: item.name,
+            price: item.price,
+            owners: item.owners.map(o => o.email)
+          }))
+        };
+        
         try {
           const res = await fetch("/calculate", {
             method: "POST",
@@ -243,4 +277,115 @@ document.addEventListener("DOMContentLoaded", () => {
   Array.from(ownerSelect.options).forEach(opt => {
     if (!isNaN(opt.textContent)) opt.remove();
   });
+  
+  document.querySelectorAll('.group-btn').forEach(li => {
+    console.log("Attaching listener to:", li);
+    attachGroupClickListener(li);
+  });
+
+
+
+  document.getElementById("create-group-btn")?.addEventListener("click", async () => {
+
+    const groupName = prompt("Enter group name:");
+    if (!groupName) return;
+  
+    try {
+      const res = await fetch("/create_group", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: groupName })
+      });
+      const data = await res.json();
+  
+      if (data.success) {
+        // Create new group <li>
+        const newLi = document.createElement("li");
+        newLi.className = "group-btn text-[#0c1c17] hover:underline cursor-pointer";
+        newLi.dataset.groupId = data.group_id;
+        newLi.textContent = `${groupName} (1 member)`;
+        document.querySelector("#group-panel").classList.add("hidden"); // Hide panel
+        document.querySelector(".group-btn")?.parentElement.appendChild(newLi);
+        attachGroupClickListener(newLi); // Re-attach listener
+        alert("Group created!");
+      } else {
+        alert(data.message || "Something went wrong.");
+      }
+    } catch (err) {
+      console.error("Create group error:", err);
+      alert("Failed to create group.");
+    }
+  });
+  
 });
+
+function attachGroupClickListener(li) {
+  li.addEventListener("click", async () => {
+
+    const groupId = li.dataset.groupId;
+    console.log("Clicked group ID:", groupId);
+
+    try {
+      const res = await fetch(`/group/${groupId}`);
+      const data = await res.json();
+
+      const panel = document.getElementById("group-panel");
+      panel.innerHTML = `
+        <h3 class="text-lg font-bold mb-2">${data.name}</h3>
+        <ul class="mb-4 space-y-1">
+          ${data.members.map(m => `<li class="text-sm">${m.full_name}</li>`).join("")}
+        </ul>
+        <div class="flex gap-2">
+          <button id="invite-btn" class="bg-[#019863] text-white px-3 py-1 rounded text-sm">Invite Someone</button>
+          <button id="leave-group-btn" class="bg-red-600 text-white px-3 py-1 rounded text-sm">Leave Group</button>
+        </div>
+      `;
+
+panel.classList.remove("hidden"); // ✅ make it visible
+
+
+      
+      document.getElementById("invite-btn").addEventListener("click", () => {
+        // Optional: Replace with modal or input later
+        const email = prompt("Enter email to invite:");
+        if (!email) return;
+        fetch(`/invite_to_group`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ group_id: groupId, email })
+        })
+        .then(res => res.json())
+        .then(data => {
+          alert(data.message || "Invite sent!");
+        })
+        .catch(err => {
+          console.error("Error sending invite:", err);
+          alert("Failed to send invite.");
+        });
+      });
+      document.getElementById("leave-group-btn").addEventListener("click", () => {
+        if (!confirm("Are you sure you want to leave this group?")) return;
+      
+        fetch("/leave_group", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ group_id: groupId })
+        })
+          .then(res => res.json())
+          .then(data => {
+            alert(data.message || "Left group.");
+            panel.classList.add("hidden");
+            li.remove(); // remove group from sidebar
+          })
+          .catch(err => {
+            console.error("Error leaving group:", err);
+            alert("Failed to leave group.");
+          });
+      });
+      
+    } catch (err) {
+      console.error("Error loading group:", err);
+    }
+  });
+}
+

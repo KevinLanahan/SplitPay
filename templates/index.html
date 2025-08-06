@@ -22,6 +22,12 @@
       .choices__list--dropdown input[type="checkbox"] {
         pointer-events: none;
       }
+      .group-btn {
+        cursor: pointer;
+      }
+      .group-btn:hover {
+        text-decoration: underline;
+      }
     </style>
 
     <title>SplitPay</title>
@@ -145,15 +151,25 @@
         </section>
 
         <!-- 📌 Sidebar -->
+         
         <aside class="w-full md:w-80 space-y-6">
           <div class="bg-white rounded-lg p-4 shadow-sm border">
             <h3 class="font-bold text-lg mb-2">Your Groups</h3>
             <ul class="space-y-1 text-sm">
               {% for group, count in user_groups %}
-              <li class="text-[#0c1c17]">{{ group.name }} ({{ count }} member{{ 's' if count != 1 else '' }})</li>
+                <li 
+                  class="group-btn text-[#0c1c17] hover:underline cursor-pointer"
+                  data-group-id="{{ group.id }}"
+                >
+                  {{ group.name }} ({{ count }} member{{ 's' if count != 1 else '' }})
+                </li>
               {% endfor %}
             </ul>
-            <button class="mt-3 text-[#019863] font-semibold">+ Create New Group</button>
+            
+            <div id="group-panel" class="mt-4 hidden text-sm text-[#0c1c17]"></div>
+            <button id="create-group-btn" class="mt-3 text-[#019863] font-semibold">+ Create New Group</button>
+
+
           </div>
 
           <div class="bg-white rounded-lg p-4 shadow-sm border">
@@ -176,3 +192,7 @@
     <script src="{{ url_for('static', filename='script.js') }}"></script>
   </body>
 </html>
+
+
+
+
