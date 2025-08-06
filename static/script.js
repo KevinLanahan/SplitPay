@@ -1,330 +1,246 @@
-document.addEventListener("DOMContentLoaded", function () {
-  // ===== Manual Tab Logic =====
-  const manualContainer = document.getElementById("manual-items");
-  const addBtn = document.getElementById("add-manual-item");
-  const totalEl = document.getElementById("manual-total");
-  const payerSelect = document.getElementById("manual-payer");
+document.addEventListener("DOMContentLoaded", () => {
+  const receiptBtn = document.getElementById("receipt-btn");
+  const manualBtn = document.getElementById("manual-btn");
+  const uploadForm = document.getElementById("photo-form");
+  const manualForm = document.getElementById("manual-entry-form");
+  const groupSelect = document.getElementById("group-select");
+  const uploadGroupSelect = document.getElementById("upload-group-select");
+  const resultsDiv = document.getElementById("results");
+  const receiptItemEntry = document.getElementById("receipt-item-entry");
+  const receiptItemsList = document.getElementById("receipt-items-list");
+  const splitItemsBtn = document.getElementById("split-items-btn");
+  const paidBySelect = document.getElementById("receipt-paid-by");
+  const itemNameInput = document.getElementById("manual-item-name");
+  const itemPriceInput = document.getElementById("manual-item-price");
+  const ownerSelect = document.getElementById("manual-owners");
+  const addItemBtn = document.getElementById("add-manual-item");
+  const submitManualBtn = document.getElementById("submit-manual-items");
+  const manualItemsList = document.getElementById("manual-items-list");
+  const userEmail = document.getElementById("user-email").value;
+  const userFullName = document.getElementById("user-full-name").value;
 
-  let people = [];
-  if (window.manualUser && window.manualFriends) {
-    people = [window.manualUser, ...window.manualFriends.filter(name => name !== window.manualUser)];
-    people.forEach(name => {
-      const opt = document.createElement("option");
-      opt.value = name;
-      opt.textContent = name;
-      payerSelect.appendChild(opt);
-    });
-  }
+  const manualItems = [];
+  const runningTotal = document.createElement("p");
+  runningTotal.className = "font-semibold text-right text-[#019863] pt-2";
+  manualItemsList.insertAdjacentElement("afterend", runningTotal);
 
-  function updateTotal() {
-    const priceInputs = manualContainer.querySelectorAll(".price-input");
-    let total = 0;
-    priceInputs.forEach(input => {
-      const val = parseFloat(input.value);
-      if (!isNaN(val)) total += val;
-    });
-    totalEl.textContent = `Total: $${total.toFixed(2)}`;
-  }
-
-  function createItem(name = "", price = "", owners = []) {
-    const div = document.createElement("div");
-    div.classList.add("ocr-item");
-
-    const nameInput = document.createElement("input");
-    nameInput.type = "text";
-    nameInput.placeholder = "Item name";
-    nameInput.value = name;
-    nameInput.classList.add("item-name");
-
-    const priceInput = document.createElement("input");
-    priceInput.type = "number";
-    priceInput.step = "0.01";
-    priceInput.placeholder = "Price";
-    priceInput.value = price;
-    priceInput.classList.add("price-input");
-    priceInput.addEventListener("input", updateTotal);
-
-    const select = document.createElement("select");
-    select.classList.add("owner-select");
-    select.setAttribute("multiple", "");
-
-    people.forEach(person => {
-      const option = document.createElement("option");
-      option.value = person;
-      option.textContent = person;
-      select.appendChild(option);
-    });
-
-    div.appendChild(nameInput);
-    div.appendChild(priceInput);
-    div.appendChild(document.createElement("br"));
-    div.appendChild(select);
-
-    const removeBtn = document.createElement("button");
-    removeBtn.textContent = "x";
-    removeBtn.className = "remove-btn";
-    removeBtn.onclick = () => {
-      div.remove();
-      updateTotal();
-    };
-    div.appendChild(removeBtn);
-
-    manualContainer.appendChild(div);
-
-    new Choices(select, {
-      removeItemButton: true,
-      placeholder: true,
-      placeholderValue: "Select owner(s)",
-    });
-  }
-
-  addBtn.addEventListener("click", () => createItem());
-
-  document.getElementById("manual-form").addEventListener("submit", function (e) {
-    e.preventDefault();
-
-    const payer = payerSelect.value;
-    const items = [];
-
-    manualContainer.querySelectorAll(".ocr-item").forEach(item => {
-      const name = item.querySelector(".item-name").value.trim();
-      const price = parseFloat(item.querySelector(".price-input").value);
-      const owners = Array.from(item.querySelector("select").selectedOptions).map(opt => opt.value);
-
-      if (name && !isNaN(price) && owners.length > 0) {
-        items.push({ name, price, owners });
-      }
-    });
-
-    fetch("/calculate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify([{ paid_by: payer, items }]),
-    })
-      .then(res => res.json())
-      .then(result => {
-        const output = Object.entries(result)
-          .map(([name, amount]) => {
-            const num = Number(amount);
-            return isNaN(num)
-              ? `${name}: Invalid amount`
-              : num < 0
-              ? `${name} is owed $${Math.abs(num).toFixed(2)}`
-              : `${name} owes $${num.toFixed(2)}`;
-          })
-          .join("<br>");
-
-        document.getElementById("manual-results").innerHTML =
-          `<div class="styled-result">${output}</div>`;
-
-        // Save to history
-        fetch("/confirm_transaction", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ paid_by: payer, items }),
-        }).then(() => {
-          const msg = document.createElement("div");
-          msg.textContent = "Transaction saved to history!";
-          msg.style.color = "green";
-          document.getElementById("manual-results").appendChild(msg);
-        });
-      });
-
-    updateTotal();
+  receiptBtn.addEventListener("click", () => {
+    uploadForm.classList.remove("hidden");
+    manualForm.classList.add("hidden");
+    receiptBtn.classList.add("bg-[#019863]", "text-white");
+    manualBtn.classList.remove("bg-[#019863]", "text-white");
   });
 
-  createItem();
-  updateTotal();
-});
+  manualBtn.addEventListener("click", () => {
+    uploadForm.classList.add("hidden");
+    manualForm.classList.remove("hidden");
+    manualBtn.classList.add("bg-[#019863]", "text-white");
+    receiptBtn.classList.remove("bg-[#019863]", "text-white");
+  });
 
-// ===== Receipt Upload Logic =====
-document.getElementById("photo-form").addEventListener("submit", function (e) {
-  e.preventDefault();
+  groupSelect?.addEventListener("change", async (e) => {
+    const groupId = e.target.value;
+    if (!groupId) return resetOwnersDropdown();
+    try {
+      const res = await fetch(`/get_group_members/${groupId}`);
+      const data = await res.json();
+      ownerSelect.innerHTML = "";
+      data.forEach(member => {
+        const opt = document.createElement("option");
+        opt.value = member.email;
+        opt.textContent = member.full_name;
+        ownerSelect.appendChild(opt);
+      });
+    } catch (err) {
+      console.error("Failed to fetch group members:", err);
+    }
+  });
 
-  const fileInput = document.getElementById("receipt-upload");
-  const file = fileInput.files[0];
+  addItemBtn?.addEventListener("click", () => {
+    const name = itemNameInput.value.trim();
+    const price = parseFloat(itemPriceInput.value);
+    const owners = Array.from(ownerSelect.selectedOptions).map(o => o.value);
+    if (!name || isNaN(price) || price <= 0 || owners.length === 0) {
+      alert("Please enter item name, valid price, and at least one owner.");
+      return;
+    }
+    manualItems.push({ name, price, owners });
+    const li = document.createElement("li");
+    li.className = "flex justify-between items-center bg-white p-2 rounded border text-sm";
+    li.innerHTML = `<span><strong>${name}</strong> - $${price.toFixed(2)}</span><span>${owners.join(", ")}</span>`;
+    manualItemsList.appendChild(li);
+    itemNameInput.value = "";
+    itemPriceInput.value = "";
+    ownerSelect.selectedIndex = -1;
+    updateRunningTotal();
+  });
 
-  if (!file) {
-    alert("Please select a receipt image.");
-    return;
+  submitManualBtn?.addEventListener("click", async () => {
+    if (manualItems.length === 0) return alert("Please add at least one item.");
+    const payload = { paid_by: userEmail, items: manualItems };
+    try {
+      const res = await fetch("/calculate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data.error) {
+        resultsDiv.innerHTML = `<p class="text-red-600 font-semibold">Error: ${data.error}</p>`;
+      } else {
+        const emailToName = { [userEmail]: userFullName };
+        renderResults(data.reimbursements, userEmail, userFullName, emailToName);
+      }
+    } catch (err) {
+      console.error("Manual calc error:", err);
+      resultsDiv.innerHTML = `<p class="text-red-600 font-semibold">Something went wrong.</p>`;
+    }
+  });
+
+  uploadForm?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const file = document.getElementById("receipt-upload").files[0];
+    const groupId = uploadGroupSelect?.value;
+    if (!file) return alert("Please upload a receipt image.");
+    const formData = new FormData();
+    formData.append("receipt", file);
+    if (groupId) formData.append("group_id", groupId);
+    try {
+      const res = await fetch("/upload_receipt", { method: "POST", body: formData });
+      const data = await res.json();
+      const { items, user, friends, total_amount } = data;
+      receiptItemEntry.classList.remove("hidden");
+      receiptItemsList.innerHTML = "";
+      resultsDiv.innerHTML = `<p class="font-bold text-right pt-4">Total: $${total_amount.toFixed(2)}</p>`;
+      paidBySelect.innerHTML = "";
+      const emailToName = {};
+      emailToName[user.email] = user.full_name;
+      friends.forEach(f => emailToName[f.email] = f.full_name);
+      [user, ...friends].forEach(person => {
+        const opt = document.createElement("option");
+        opt.value = person.email;
+        opt.textContent = person.full_name;
+        paidBySelect.appendChild(opt);
+      });
+      items.forEach(item => {
+        const itemDiv = document.createElement("li");
+        itemDiv.className = "border rounded p-3";
+        itemDiv.innerHTML = `<p class="font-semibold">${item.name} - $${item.price.toFixed(2)}</p>`;
+        const select = document.createElement("select");
+        select.multiple = true;
+        select.className = "mt-2 border rounded w-full p-2";
+        [user, ...friends].forEach(person => {
+          const opt = document.createElement("option");
+          opt.value = person.email;
+          opt.textContent = person.full_name;
+          select.appendChild(opt);
+        });
+        itemDiv.appendChild(select);
+        receiptItemsList.appendChild(itemDiv);
+      });
+
+      splitItemsBtn.onclick = async () => {
+        const items = [];
+        receiptItemsList.querySelectorAll("li").forEach(li => {
+          const label = li.querySelector("p").innerText;
+          const match = label.match(/^(.*?) - \$(\d+(\.\d{2})?)/);
+          if (!match) return;
+          const name = match[1].trim();
+          const price = parseFloat(match[2]);
+          const owners = Array.from(li.querySelector("select").selectedOptions).map(o => o.value);
+          if (owners.length > 0) items.push({ name, price, owners });
+        });
+        if (items.length === 0) return alert("Please assign at least one owner to each item.");
+        const paidBy = paidBySelect.value;
+        const nameLookup = {};
+        document.querySelectorAll("#receipt-paid-by option").forEach(opt => {
+          nameLookup[opt.value] = opt.textContent;
+        });
+        const payload = { paid_by: paidBy, items, name_lookup: nameLookup };
+        try {
+          const res = await fetch("/calculate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          const data = await res.json();
+          if (data.error) {
+            resultsDiv.innerHTML = `<p class="text-red-600 font-semibold">Error: ${data.error}</p>`;
+          } else {
+            renderResults(data.reimbursements, paidBy, nameLookup[paidBy] || paidBy, nameLookup);
+          }
+        } catch (err) {
+          console.error("Split calc error:", err);
+          resultsDiv.innerHTML = `<p class="text-red-600 font-semibold">Something went wrong.</p>`;
+        }
+      };
+    } catch (err) {
+      console.error("Upload error:", err);
+      resultsDiv.innerHTML = `<p class="text-red-600 font-semibold">Error uploading receipt.</p>`;
+    }
+  });
+
+  itemPriceInput?.addEventListener("input", updateRunningTotal);
+
+  function updateRunningTotal() {
+    const current = parseFloat(itemPriceInput.value);
+    const sum = manualItems.reduce((total, item) => total + item.price, 0);
+    const liveTotal = isNaN(current) ? sum : sum + current;
+    runningTotal.textContent = `Running Total: $${liveTotal.toFixed(2)}`;
   }
 
-  const formData = new FormData();
-  formData.append("receipt", file);
-
-  fetch("/upload_receipt", {
-    method: "POST",
-    body: formData,
-  })
-    .then((res) => res.json())
-    .then((data) => {
-      const container = document.getElementById("results");
-      container.innerHTML = "";
-
-      if (data.error) {
-        container.innerHTML = `<p style="color:red;">${data.error}</p>`;
-        return;
+  
+  function renderResults(balances, paidByEmail, paidByName, emailToName) {
+    if (!balances || typeof balances !== "object") {
+      resultsDiv.innerHTML = `<p class="text-red-600 font-semibold">Invalid response: balances is missing or not an object.</p>`;
+      console.error("Invalid balances object:", balances);
+      return;
+    }
+  
+    const lines = Object.entries(balances).map(([email, balance]) => {
+      if (email === paidByEmail) return "";
+  
+      const name = emailToName[email] || email;
+      let status = "";
+      let color = "";
+  
+      if (balance > 0) {
+        // They owe the payor
+        status = `${name} owes ${paidByName} $${balance.toFixed(2)}`;
+        color = "text-green-600";
+      } else if (balance < 0) {
+        // Payor owes them
+        status = `${paidByName} owes ${name} $${Math.abs(balance).toFixed(2)}`;
+        color = "text-red-600";
       }
+  
+      return `<li class="${color}">${status}</li>`;
+    }).filter(Boolean).join("");
+  
+    resultsDiv.innerHTML = `
+      <h3 class="text-xl font-bold mt-6">Final Split</h3>
+      <ul class="mt-2 space-y-1 text-sm">${lines}</ul>
+    `;
+  
+    // ✅ Save transaction if user is the payor and others owe them
+    const totalOwedToUser = Object.entries(balances).reduce((sum, [email, amount]) => {
+      return email !== paidByEmail && amount > 0 ? sum + amount : sum;
+    }, 0);
 
-      const people = [data.user, ...data.friends.filter(f => f !== data.user)];
+    }
+  
+  
+  
 
-      const renderItem = (item, index) => {
-        const div = document.createElement("div");
-        div.classList.add("ocr-item");
+  function resetOwnersDropdown() {
+    ownerSelect.innerHTML = "";
+    const userOption = document.createElement("option");
+    userOption.value = userEmail;
+    userOption.textContent = "You";
+    ownerSelect.appendChild(userOption);
+  }
 
-        const label = document.createElement("span");
-        label.textContent = `${item.name} - $${item.price.toFixed(2)}`;
-
-        const select = document.createElement("select");
-        select.classList.add("owner-select");
-        select.setAttribute("multiple", "");
-        select.dataset.index = index;
-
-        people.forEach(name => {
-          const option = document.createElement("option");
-          option.value = name;
-          option.textContent = name;
-          select.appendChild(option);
-        });
-
-        const removeBtn = document.createElement("button");
-        removeBtn.innerHTML = "✕";
-        removeBtn.className = "remove-btn";
-        removeBtn.onclick = () => div.remove();
-
-        div.appendChild(label);
-        div.appendChild(removeBtn);
-        div.appendChild(document.createElement("br"));
-        div.appendChild(select);
-
-        new Choices(select, {
-          removeItemButton: true,
-          placeholder: true,
-          placeholderValue: "Select owner(s)",
-        });
-
-        return div;
-      };
-
-      // Render items
-      data.items.forEach((item, i) => {
-        const div = renderItem(item, i);
-        container.appendChild(div);
-      });
-
-      // Show total of receipt items
-      const totalAmount = data.items.reduce((sum, item) => sum + item.price, 0);
-      const totalDiv = document.createElement("div");
-      totalDiv.className = "styled-result";
-      totalDiv.style.fontWeight = "bold";
-      totalDiv.style.marginTop = "10px";
-      totalDiv.textContent = `Total detected from receipt: $${totalAmount.toFixed(2)}`;
-      container.appendChild(totalDiv);
-
-      // Add Item Button
-      const addBtn = document.createElement("button");
-      addBtn.textContent = "+ Add Item";
-      addBtn.className = "add-btn";
-      addBtn.onclick = () => {
-        const newItem = renderItem({ name: "New Item", price: 0 }, Date.now());
-        container.insertBefore(newItem, addBtn);
-      };
-      container.appendChild(addBtn);
-
-      // Payer Section
-      const payerSection = document.createElement("div");
-      payerSection.style.marginTop = "15px";
-      payerSection.style.display = "flex";
-      payerSection.style.flexDirection = "column";
-      payerSection.style.alignItems = "flex-start";
-      payerSection.style.gap = "8px";
-
-      const payerLabel = document.createElement("label");
-      payerLabel.textContent = "Who paid?";
-      payerLabel.style.fontWeight = "bold";
-
-      const payerDropdown = document.createElement("select");
-      payerDropdown.id = "payer-select";
-      payerDropdown.style.padding = "5px";
-      payerDropdown.style.fontFamily = "'Open Sans', sans-serif";
-      payerDropdown.style.fontSize = "14px";
-
-      people.forEach(p => {
-        const opt = document.createElement("option");
-        opt.value = p;
-        opt.textContent = p;
-        payerDropdown.appendChild(opt);
-      });
-
-      payerSection.appendChild(payerLabel);
-      payerSection.appendChild(payerDropdown);
-      container.appendChild(payerSection);
-
-      // Calculate Button
-      const calcBtn = document.createElement("button");
-      calcBtn.textContent = "Calculate Split";
-      calcBtn.classList.add("calculate-btn");
-      calcBtn.onclick = () => {
-        const payer = document.getElementById("payer-select").value;
-        const items = [];
-
-        document.querySelectorAll(".ocr-item").forEach(div => {
-          const label = div.querySelector("span")?.textContent || "Unknown - $0";
-          const [name, priceText] = label.split(" - $");
-          const price = parseFloat(priceText);
-          const select = div.querySelector("select");
-          const owners = Array.from(select.selectedOptions).map(opt => opt.value);
-
-          if (owners.length > 0) {
-            items.push({ name: name.trim(), price, owners });
-          }
-        });
-
-        fetch("/calculate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify([{ paid_by: payer, items }]),
-        })
-          .then(res => res.json())
-          .then(result => {
-            const outputDiv = document.createElement("div");
-            outputDiv.className = "styled-result";
-
-            Object.entries(result).forEach(([name, amount]) => {
-              const num = Number(amount);
-              if (isNaN(num)) return;
-
-              const line = document.createElement("div");
-              line.textContent = num < 0
-                ? `${name} is owed $${Math.abs(num).toFixed(2)}`
-                : `${name} owes $${num.toFixed(2)}`;
-              outputDiv.appendChild(line);
-            });
-
-            container.appendChild(outputDiv);
-
-            fetch("/confirm_transaction", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ paid_by: payer, items }),
-            }).then(() => {
-              const msg = document.createElement("div");
-              msg.textContent = "Transaction saved to history!";
-              msg.style.color = "green";
-              outputDiv.appendChild(msg);
-            });
-          });
-      };
-
-      container.appendChild(document.createElement("br"));
-      container.appendChild(calcBtn);
-    });
+  Array.from(ownerSelect.options).forEach(opt => {
+    if (!isNaN(opt.textContent)) opt.remove();
+  });
 });
-
-// ===== Tab Switching Logic =====
-function showTab(tabId, event) {
-  document.querySelectorAll(".tab-content").forEach(tab => tab.classList.remove("active"));
-  document.querySelectorAll(".tab-button").forEach(btn => btn.classList.remove("active"));
-  document.getElementById(tabId).classList.add("active");
-  event.target.classList.add("active");
-}

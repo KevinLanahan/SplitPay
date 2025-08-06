@@ -18,6 +18,8 @@
       <a href="/">Home</a>
       <a href="/profile">Profile</a>
       <a href="/friends">Friends</a>
+      <a href="/billing">Billing</a>
+      <a href="/my_invites">Group Invites</a>
     </div>
   
     <div class="auth-buttons">
@@ -56,6 +58,27 @@
       <div class="profile-info">
         <h2>{{ user.full_name }}</h2>
         <p>@{{ user.username }}</p>
+        <p class="subscription-tier">
+          <strong>Subscription:</strong>
+          {% if user.subscription_tier == 'pro' %}
+            Pro
+          {% elif user.subscription_tier == 'pro_plus' %}
+            Pro+
+          {% elif user.subscription_tier == 'free' or not user.subscription_tier %}
+            Free
+          {% else %}
+            {{ user.subscription_tier|capitalize }}
+          {% endif %}
+        </p>
+        {% if user.subscription_tier == 'pro' %}
+          <p><strong>Scans used:</strong> {{ user.scan_count }} / 100 this month</p>
+        {% elif user.subscription_tier == 'pro_plus' %}
+          <p><strong>Scans used:</strong> Unlimited</p>
+        {% endif %}
+
+        
+        
+        
       </div>
     </div>
 

@@ -1,0 +1,134 @@
+/* === NAVIGATION BAR === */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Open Sans', sans-serif;
+    background-color: #DEEEFE;
+  }
+  
+  .top-nav {
+    background-color: white;
+    padding: 12px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    font-size: 16px;
+    height: 60px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+  }
+  
+  .logo {
+    color: #007bff;
+    font-weight: 600;
+    font-size: 28px;
+    font-style: italic;
+    padding-left: 24px;
+  }
+  
+  .nav-links {
+    display: flex;
+    gap: 30px;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .nav-links a:hover {
+    color: #007bff;
+  }
+  
+  .auth-buttons {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    padding-right: 60px;
+  }
+  
+  .auth-buttons a:first-child {
+    font-size: 0.95rem;
+    opacity: 0.85;
+  }
+  
+  a:link, a:visited {
+    text-decoration: none;
+    color: black;
+    font-weight: 400;
+  }
+  
+  a:hover {
+    color: rgb(100, 100, 100);
+  }
+  
+  /* === PAGE LAYOUT === */
+  .page-content {
+    padding: 120px 40px 40px 40px; /* push below navbar */
+    display: flex;
+    justify-content: center;
+  }
+  
+  /* === INVITES PANEL === */
+  .history-panel {
+    background: white;
+    padding: 24px;
+    border-radius: 10px;
+    max-width: 700px;
+    width: 100%;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+  
+  .history-panel h3 {
+    margin-top: 0;
+    font-size: 22px;
+    color: #007bff;
+    margin-bottom: 20px;
+  }
+  
+  .invite-list {
+    list-style-type: none;
+    padding: 0;
+  }
+  
+  .invite-item {
+    background-color: #f8f8f8;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  
+  .invite-info {
+    flex: 1;
+    font-size: 15px;
+  }
+  
+  .invite-actions form {
+    display: inline;
+    margin-left: 10px;
+  }
+  
+  .accept-btn,
+  .decline-btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  
+  .accept-btn {
+    background-color: #4CAF50;
+    color: white;
+  }
+  
+  .decline-btn {
+    background-color: #f44336;
+    color: white;
+  }
+  

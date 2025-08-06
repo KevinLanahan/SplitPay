@@ -91,7 +91,7 @@ body {
     display: flex;
     flex-direction: row;
     justify-content: space-between;
-    padding: 180px 80px 40px 80px;
+    padding: 100px 80px 40px 80px;
     background-color: #DEEEFE;
     min-height: 100vh;
     box-sizing: border-box;
@@ -317,4 +317,193 @@ body {
 
 .add-btn:hover {
   background-color: #eaf3ff;
+}
+
+
+.ad-banner {
+  margin: 80px auto 20px auto; /* ⬅️ Push it below navbar */
+  background: #fdf3c4;
+  border: 1px solid #f5d87b;
+  padding: 15px 20px;
+  max-width: 700px;
+  text-align: center;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+  font-family: 'Open Sans', sans-serif;
+  animation: fadeInUp 0.4s ease-in-out;
+}
+
+
+
+.ad-banner p {
+  margin: 0 0 10px;
+  font-size: 1.1em;
+  color: #333;
+}
+
+.upgrade-btn {
+  display: inline-block;
+  padding: 8px 15px;
+  background: #007bff;
+  color: white;
+  text-decoration: none;
+  border-radius: 6px;
+  font-weight: bold;
+  transition: background 0.2s ease-in-out;
+}
+
+.upgrade-btn:hover {
+  background: #0056b3;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
+
+.group-panel {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.group-panel h3 {
+  margin-top: 0;
+  font-size: 20px;
+  color: #007bff;
+}
+
+#group-list {
+  list-style: none;
+  padding-left: 0;
+  margin: 0 0 10px 0;
+}
+
+#group-list li {
+  margin-bottom: 10px;
+  font-size: 14px;
+  color: #333;
+}
+.group-btn {
+  background: none;
+  border: none;
+  font-weight: bold;
+  font-family: 'Open Sans', sans-serif;
+  font-size: 14px;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  padding: 4px 0;
+  text-decoration: none;
+}
+
+.group-btn:hover {
+  text-decoration: underline;
+}
+
+.group-toggle {
+  display: inline-block;
+  width: 16px;
+  margin-right: 6px;
+  transition: transform 0.2s ease;
+  font-weight: normal;
+}
+
+
+.group-details {
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 0 8px rgba(0,0,0,0.05);
+  margin-top: 12px;
+}
+
+.group-details.hidden {
+  display: none;
+}
+
+.group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+#group-members {
+  list-style: none;
+  padding: 0;
+  margin-bottom: 16px;
+}
+
+#group-list li:not(.group-btn) {
+  margin-bottom: 10px;
+  font-size: 14px;
+  color: #333;
+}
+
+
+.leave-group-btn {
+  background: #ffe6e6;
+  color: #c00;
+  border: none;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-radius: 6px;
+  font-size: 14px;
+  margin-left: 8px;
+}
+
+
+.invite-list {
+  list-style-type: none;
+  padding: 0;
+}
+
+.invite-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #f8f8f8;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 10px;
+  font-family: 'Open Sans', sans-serif;
+}
+
+.invite-info {
+  flex: 1;
+  font-size: 15px;
+}
+
+.accept-btn, .decline-btn {
+  margin-left: 10px;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.accept-btn {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.decline-btn {
+  background-color: #f44336;
+  color: white;
+}
+
+.hidden {
+  display: none;
 }

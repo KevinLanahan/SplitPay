@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>SplitPay - Group Invites</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='invites.css') }}">
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- 🔹 NAVIGATION BAR -->
+  <div class="top-nav">
+    <div class="logo">SplitPay</div>
+
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/profile">Profile</a>
+      <a href="/friends">Friends</a>
+      <a href="/billing">Billing</a>
+      <a href="/my_invites">Group Invites</a>
+    </div>
+
+    <div class="auth-buttons">
+      <a href="/logout">Log out</a>
+    </div>
+  </div>
+
+  <!-- 🔸 INVITES PANEL -->
+  <div class="page-content">
+    <div class="history-panel">
+      <h3>📨 Group Invitations</h3>
+      <ul class="invite-list">
+        {% for invite, group_name, inviter_name in invites %}
+        <li class="invite-item">
+          <div class="invite-info">
+            <strong>{{ inviter_name }}</strong> invited you to <strong>{{ group_name }}</strong><br>
+            <small>Invited on {{ invite.created_at.strftime('%B %d, %Y at %-I:%M %p') }}</small>
+          </div>
+          <div class="invite-actions">
+            <button class="accept-btn" onclick="handleAccept({{ invite.id }})">Accept</button>
+            <form method="POST" action="/decline_invite" style="display:inline;">
+              <input type="hidden" name="invite_id" value="{{ invite.id }}">
+              <button type="submit" class="decline-btn">Decline</button>
+            </form>
+          </div>
+          
+        </li>
+        
+        {% else %}
+          <li>No invites right now.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</body>
+<script>
+  function handleAccept(inviteId) {
+    fetch("/accept_group_invite", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ invite_id: inviteId })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        location.reload(); // Refresh the page to remove the accepted invite
+      } else {
+        alert("Failed to accept invite.");
+      }
+    });
+  }
+</script>
+
+</html>

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>SplitPay - Choose Plan</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='static.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='billing.css') }}?v=1">
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600&display=swap');
+  </style>
+</head>
+<body>
+  <!-- Navigation bar -->
+  <div class="top-nav">
+    <div class="logo">SplitPay</div>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/profile">Profile</a>
+      <a href="/friends">Friends</a>
+      <a href="/billing">Billing</a>
+      <a href="/my_invites">Group Invites</a>
+
+    </div>
+    <div class="auth-buttons">
+      <a href="/logout">Log out</a>
+    </div>
+  </div>
+
+  <div class="billing-container">
+    <div class="billing-banner">Choose Your Plan</div>
+
+    <!-- Toggle -->
+    <div class="billing-toggle">
+      <button id="monthlyBtn" class="toggle-btn active">Monthly</button>
+      <button id="annualBtn" class="toggle-btn">Annual</button>
+    </div>
+
+    <div class="plans" id="plansContainer">
+      <!-- Free Plan -->
+      <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="plan" value="free" />
+        <div class="plan-box {% if user.subscription_tier == 'free' %}selected{% endif %}">
+          <div class="plan-title">Free</div>
+          <div class="plan-price">$0/mo</div>
+          <div class="plan-features">
+            • Unlimited manual entries<br>
+            • View last 10 transactions<br>
+            • No AI receipt scanning<br><br>
+
+          </div>
+          <button type="submit" class="plan-button">Try Free</button>
+        </div>
+      </form>
+
+      <!-- Pro Monthly -->
+      <form method="POST" action="/create-checkout-session" class="plan-monthly">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="plan" value="pro_monthly" />
+        <div class="plan-box {% if user.subscription_tier == 'pro' %}selected{% endif %}">
+          <div class="plan-title">Pro</div>
+          <div class="plan-price">$2.99/mo</div>
+          <div class="plan-features">
+            • 100 AI receipt scans<br>
+            • Unlimited history<br>
+            
+          </div>
+          <button type="submit" class="plan-button">Upgrade</button>
+        </div>
+      </form>
+
+      <!-- Pro Annual -->
+      <form method="POST" action="/create-checkout-session" class="plan-annual" style="display:none;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="plan" value="pro_annual" />
+        <div class="plan-box {% if user.subscription_tier == 'pro' %}selected{% endif %}">
+          <div class="plan-title">Pro (Annual)</div>
+          <div class="plan-price">$29.99/year</div>
+          <div class="plan-features">
+            • Unlimited AI receipt scans<br>
+            • Advanced analytics (coming soon!)<br>
+            • Everything in Pro
+
+            • Save 17%
+          </div>
+          <button type="submit" class="plan-button">Upgrade</button>
+        </div>
+      </form>
+
+      <!-- Pro+ Monthly -->
+      <form method="POST" action="/create-checkout-session" class="plan-monthly">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="plan" value="pro_plus_monthly" />
+        <div class="plan-box {% if user.subscription_tier == 'pro_plus' %}selected{% endif %}">
+          <div class="plan-title">Pro+</div>
+          <div class="plan-price">$7.99/mo</div>
+          <div class="plan-features">
+            • Unlimited AI receipt scans<br>
+            • Advanced analytics<br>
+            • Everything in Pro
+          </div>
+          <button type="submit" class="plan-button">Go Pro+</button>
+        </div>
+      </form>
+
+      <!-- Pro+ Annual -->
+      <form method="POST" action="/create-checkout-session" class="plan-annual" style="display:none;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="plan" value="pro_plus_annual" />
+        <div class="plan-box {% if user.subscription_tier == 'pro_plus' %}selected{% endif %}">
+          <div class="plan-title">Pro+ (Annual)</div>
+          <div class="plan-price">$79.99/year</div>
+          <div class="plan-features">
+            • Unlimited AI receipt scans<br>
+            • Advanced analytics<br>
+            • Everything in Pro<br>
+            • Save 17%
+          </div>
+          <button type="submit" class="plan-button">Go Pro+</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const userTier = "{{ user.subscription_tier }}";
+  </script>
+  <script src="{{ url_for('static', filename='billing.js') }}"></script>
+</body>
+</html>

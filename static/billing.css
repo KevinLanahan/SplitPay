@@ -1,0 +1,125 @@
+body {
+  background-color: #DEEDFD;
+  font-family: 'Open Sans', sans-serif;
+  margin: 0;
+  padding-top: 80px;
+}
+
+.billing-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.billing-banner {
+  font-size: 32px;
+  font-weight: 600;
+  margin-bottom: 40px;
+  padding-top: 40px;
+  color: #333;
+}
+
+.plans {
+  display: flex;
+  gap: 40px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 60px;
+}
+
+.plan-box {
+  background-color: white;
+  padding: 32px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  width: 280px;
+  min-height: 320px; /* ← FORCE height consistency */
+  text-align: center;
+  border: 2px solid transparent;
+  transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.plan-box:hover {
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2);
+}
+
+.selected {
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2);
+}
+
+.plan-title {
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #111;
+}
+
+.plan-price {
+  font-size: 24px;
+  color: #007bff;
+  font-weight: 800;
+  margin-bottom: 16px;
+}
+
+.plan-features {
+  font-size: 14px;
+  color: #555;
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+
+
+
+.plan-button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  margin-top: 20px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  width: 100%;
+}
+
+.plan-button:hover {
+  background-color: #0056cc;
+  transform: translateY(-2px);
+}
+
+.plan-button:active {
+  background-color: #004bb5;
+  transform: scale(0.98);
+}
+
+
+.toggle-btn {
+  background-color: white;
+  border: 2px solid #007bff;
+  color: #007bff;
+  font-weight: 600;
+  padding: 10px 20px;
+  margin: 10px;
+  border-radius: 8px;
+
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.toggle-btn:hover {
+  background-color: #e6f0ff;
+}
+
+.toggle-btn.active {
+  background-color: #007bff;
+  color: white;
+}

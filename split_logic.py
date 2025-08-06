@@ -1,36 +1,28 @@
-# split_logic.py
-
-def calculate_balances(purchases):
+def calculate_balances(purchase):
     totals = {}
 
-    # Find all people involved and initialize to 0
-    for purchase in purchases:
-        payer = purchase["paid_by"]
-        if payer not in totals:
-            totals[payer] = 0
+    paid_by = purchase["paid_by"]
+    items = purchase["items"]
 
-        for item in purchase["items"]:
-            for person in item["owners"]:
-                if person not in totals:
-                    totals[person] = 0
+    # Ensure payer is in totals
+    if paid_by not in totals:
+        totals[paid_by] = 0
 
-    # Process each purchase
-    for purchase in purchases:
-        paid_by = purchase["paid_by"]
-        total_paid = 0
+    for item in items:
+        price = float(item["price"])  # extra safety
+        owners = item["owners"]
 
-        for item in purchase["items"]:
-            price = item["price"]
-            owners = item["owners"]
-            split_price = price / len(owners)
+        # Guard against division by zero
+        if not owners:
+            continue
 
-            for person in owners:
-                totals[person] += split_price
+        split_price = price / len(owners)
 
-            total_paid += price
+        for person in owners:
+            if person not in totals:
+                totals[person] = 0
+            totals[person] += split_price
 
-        totals[paid_by] -= total_paid
+        totals[paid_by] -= price
 
     return totals
-
-

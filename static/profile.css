@@ -7,7 +7,6 @@ body {
   padding: 0;
 }
 
-/* 🟦 Navigation Bar */
 .top-nav {
   background-color: white;
   padding: 12px 24px;
@@ -68,7 +67,6 @@ body {
   color: #007bff;
 }
 
-/* 📦 Profile Page Layout */
 .profile-container {
   max-width: 700px;
   margin: 150px auto 30px;
@@ -102,7 +100,6 @@ body {
   
 }
 
-/* 📸 Camera Icon Overlay */
 .camera-icon {
   position: absolute;
   bottom: 0;
@@ -119,7 +116,6 @@ body {
   background-color: #f0f0f0;
 }
 
-/* 📂 Dropdown Menu */
 .dropdown-menu {
   display: none;
   position: absolute;
@@ -158,8 +154,8 @@ body {
 
 
 .profile-dropdown .dropdown-content a {
-  font-size: 14px;        /* Smaller font for cleaner look */
-  padding: 6px 12px;       /* More balanced spacing */
+  font-size: 14px;        
+  padding: 6px 12px;       
   display: block;
   text-align: left;
 }
@@ -171,7 +167,7 @@ body {
 .profile-info p {
   margin-top: 4px;
   font-size: 14px;
-  color: #666;
+  color: #000000;
 }
 
 .upload-form {
@@ -192,3 +188,12 @@ body {
   padding: 10px 0;
   border-bottom: 1px solid #ddd;
 }
+
+
+.subscription-tier {
+  margin-top: 6px;
+  font-size: 14px;
+  color: #007bff;
+  font-weight: 600;
+}
+
