@@ -1,28 +1,104 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign Up</title>
-    <link rel="stylesheet" href="/static/signup.css">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600&display=swap');
-    </style>
-</head>
-<body>
-    <div class="signup-container">
-        <h2>Create Your SplitPay Account</h2>
-        <form action="/signup" method="POST">
-          
-          <input type="text" name="name" placeholder="Full Name" required />
-          <input type="email" name="email" placeholder="Email" required />
-          <input type="text" name="username" placeholder="Username" required />
-          <input type="password" name="password" placeholder="Password" required />
-          <button type="submit">Sign Up</button>
-        </form>
-        <div class="login-link">
-          Already have an account? <a href="/login">Log in</a>
+<html>
+  <head>
+    <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin />
+    <link
+      rel="stylesheet"
+      as="style"
+      onload="this.rel='stylesheet'"
+      href="https://fonts.googleapis.com/css2?display=swap&family=Manrope:wght@400;500;700;800&family=Noto+Sans:wght@400;500;700;900"
+    />
+    <title>Sign Up - SplitPay</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  </head>
+  <body class="bg-[#f8fcfa]" style='font-family: Manrope, "Noto Sans", sans-serif;'>
+    <div class="flex flex-col min-h-screen">
+      <!-- Header -->
+      <header class="flex items-center justify-between border-b border-[#e6f4ef] px-10 py-3">
+        <div class="flex items-center gap-4 text-[#0c1c17]">
+          <div class="size-4">
+            <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M24 4H42V17.3333V30.6667H24V44H6V30.6667V17.3333H24V4Z" fill="currentColor"></path>
+            </svg>
+          </div>
+          <h2 class="text-lg font-bold tracking-[-0.015em]">SplitPay</h2>
         </div>
+      </header>
+
+      <!-- Centered Content -->
+      <main class="flex flex-1 items-center justify-center px-4">
+        <div class="w-full max-w-[512px] bg-white rounded-xl shadow-md p-8">
+          <h2 class="text-[#0c1c17] text-[28px] font-bold text-center mb-6">Create your account</h2>
+          {% if error %}
+          <p class="text-red-500 text-center mb-4">{{ error }}</p>
+          {% endif %}
+          <!-- ✅ Form for signup -->
+          <form method="POST" action="{{ url_for('signup') }}">
+            
+            <!-- Full Name -->
+            <label class="block mb-4">
+              <p class="text-[#0c1c17] font-medium mb-2">Full Name</p>
+              <input
+                type="text"
+                name="full_name"
+                placeholder="Enter your full name"
+                required
+                class="form-input w-full rounded-lg bg-[#e6f4ef] h-14 px-4 placeholder:text-[#46a080] border-none focus:ring-0"
+              />
+            </label>
+
+            <!-- Username -->
+            <label class="block mb-4">
+              <p class="text-[#0c1c17] font-medium mb-2">Username</p>
+              <input
+                type="text"
+                name="username"
+                placeholder="Choose a username"
+                required
+                class="form-input w-full rounded-lg bg-[#e6f4ef] h-14 px-4 placeholder:text-[#46a080] border-none focus:ring-0"
+              />
+            </label>
+
+            <!-- Email -->
+            <label class="block mb-4">
+              <p class="text-[#0c1c17] font-medium mb-2">Email Address</p>
+              <input
+                type="email"
+                name="email"
+                placeholder="Enter your email address"
+                required
+                class="form-input w-full rounded-lg bg-[#e6f4ef] h-14 px-4 placeholder:text-[#46a080] border-none focus:ring-0"
+              />
+            </label>
+
+            <!-- Password -->
+            <label class="block mb-6">
+              <p class="text-[#0c1c17] font-medium mb-2">Password</p>
+              <input
+                type="password"
+                name="password"
+                placeholder="Create a password"
+                required
+                class="form-input w-full rounded-lg bg-[#e6f4ef] h-14 px-4 placeholder:text-[#46a080] border-none focus:ring-0"
+              />
+            </label>
+
+            <!-- Sign Up Button -->
+            <button
+              type="submit"
+              class="w-full h-12 bg-[#019863] text-[#f8fcfa] font-bold rounded-lg hover:bg-[#017f53] transition"
+            >
+              Sign Up
+            </button>
+          </form>
+
+          <!-- Login Link -->
+          <p class="text-[#46a080] text-sm text-center mt-4">
+            Already have an account?
+            <a href="/login" class="underline">Log In</a>
+          </p>
+        </div>
+      </main>
     </div>
-</body>
+  </body>
 </html>

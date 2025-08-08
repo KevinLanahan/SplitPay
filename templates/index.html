@@ -36,33 +36,40 @@
   <body class="bg-[#f8fcfa] font-[Manrope,Noto Sans,sans-serif]">
     <div class="min-h-screen flex flex-col">
       <!-- 🔷 Header/Nav -->
-      <header class="flex items-center justify-between border-b border-[#e6f4ef] px-10 py-3">
-        <div class="flex items-center gap-4 text-[#0c1c17]">
-          <div class="size-4">
-            <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M24 45.8C19.7 45.8 15.5 44.5 11.9 42.1C8.3 39.7 5.5 36.3 3.9 32.3C2.2 28.4 1.8 24 2.6 19.7C3.5 15.5 5.5 11.6 8.6 8.6C11.6 5.5 15.5 3.5 19.7 2.6C24 1.8 28.4 2.2 32.3 3.9C36.3 5.5 39.7 8.3 42.1 11.9C44.5 15.5 45.8 19.7 45.8 24L24 24V45.8Z" fill="currentColor"/>
-            </svg>
-          </div>
-          <h2 class="text-lg font-bold tracking-tight">SplitPay</h2>
-        </div>
-        <div class="flex items-center gap-9">
-          <nav class="flex items-center gap-8 text-sm font-medium text-[#0c1c17]">
-            <a href="/">Home</a>
-            <a href="/profile">Profile</a>
-            <a href="/friends">Friends</a>
-            <a href="/billing">Billing</a>
-            <a href="/my_invites">Group Invites</a>
-          </nav>
-          <div class="flex items-center gap-4">
-            <button class="h-10 w-10 rounded-lg bg-[#e6f4ef] flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256">
-                <path d="M221.8,175.94C216.25,166.38,208,139.33,208,104a80,80,0,1,0-160,0c0,35.34-8.26,62.38-13.81,71.94A16,16,0,0,0,48,200H88.81a40,40,0,0,0,78.38,0H208a16,16,0,0,0,13.8-24.06ZM128,216a24,24,0,0,1-22.62-16h45.24A24,24,0,0,1,128,216Z"/>
-              </svg>
-            </button>
-            <div class="size-10 rounded-full bg-cover bg-center" style='background-image: url("https://lh3.googleusercontent.com/a-/AOh14GhN")'></div>
-          </div>
-        </div>
-      </header>
+      <!-- 🔷 Navigation Bar -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-b-[#e6f4ef] px-10 py-3">
+  <div class="flex items-center gap-4 text-[#0c1c17]">
+    <div class="size-4">
+      <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path fill-rule="evenodd" clip-rule="evenodd" d="M24 4H42V17.3333V30.6667H24V44H6V30.6667V17.3333H24V4Z" fill="currentColor"></path>
+      </svg>
+    </div>
+    <h2 class="text-[#0c1c17] text-lg font-bold tracking-tight">SplitPay</h2>
+  </div>
+  <div class="flex items-center gap-8">
+    <nav class="flex gap-9 text-sm font-medium text-[#0c1c17]">
+      <a href="/">Home</a>
+      <a href="/profile">Profile</a>
+      <a href="/friends">Friends</a>
+      <a href="/billing">Billing</a>
+      <a href="/my_invites">Group Invites</a>
+    </nav>
+    <div class="flex items-center gap-4">
+      <!-- Bell Icon -->
+      <button class="h-10 w-10 rounded-full bg-[#e6f4ef] flex items-center justify-center text-[#0c1c17]">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" fill="currentColor" viewBox="0 0 256 256">
+          <path d="M221.8,175.94C216.25,166.38,208,139.33,208,104a80,80,0,1,0-160,0c0,35.34-8.26,62.38-13.81,71.94A16,16,0,0,0,48,200H88.81a40,40,0,0,0,78.38,0H208a16,16,0,0,0,13.8-24.06ZM128,216a24,24,0,0,1-22.62-16h45.24A24,24,0,0,1,128,216Z" />
+        </svg>
+      </button>
+      <!-- Log Out Button -->
+      <a href="/logout" class="px-4 py-2 bg-[#019863] text-white rounded-lg text-sm font-bold hover:bg-[#017f53] transition">
+        Log Out
+      </a>
+    </div>
+  </div>
+</header>
+
+      
 
       <!-- 📄 Main Content -->
       <main class="flex flex-col md:flex-row px-10 py-8 gap-10">

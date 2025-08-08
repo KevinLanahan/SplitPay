@@ -54,7 +54,6 @@ class Group(db.Model):
     created_by = db.Column(db.String, db.ForeignKey("user.email"))
     invites = db.relationship('GroupInvite', backref='group', cascade='all, delete-orphan')
     members = db.relationship('GroupMember', backref='group', cascade='all, delete-orphan', passive_deletes=True)
-    transactions = db.relationship('GroupTransaction', backref='group', cascade='all, delete-orphan', passive_deletes=True)
 
 
 
@@ -78,12 +77,3 @@ class GroupInvite(db.Model):
     from_user = db.relationship("User", foreign_keys=[from_user_id])
     to_user = db.relationship("User", foreign_keys=[to_user_id])
 
-
-
-class GroupTransaction(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    group_id = db.Column(db.Integer, db.ForeignKey("group.id"), nullable=False)
-    paid_by = db.Column(db.String(120), nullable=False)
-    amount = db.Column(db.Float, nullable=False)
-    data = db.Column(db.Text)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)

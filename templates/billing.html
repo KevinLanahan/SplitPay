@@ -1,131 +1,125 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>SplitPay - Choose Plan</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='static.css') }}" />
-  <link rel="stylesheet" href="{{ url_for('static', filename='billing.css') }}?v=1">
+  <head>
+    <meta charset="utf-8" />
+    <title>SplitPay — Billing</title>
+    <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin />
+    <link rel="stylesheet" as="style" onload="this.rel='stylesheet'"
+      href="https://fonts.googleapis.com/css2?display=swap&family=Manrope:wght@400;500;700;800&family=Noto+Sans:wght@400;500;700;900" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  </head>
 
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600&display=swap');
-  </style>
-</head>
-<body>
-  <!-- Navigation bar -->
-  <div class="top-nav">
-    <div class="logo">SplitPay</div>
-    <div class="nav-links">
-      <a href="/">Home</a>
-      <a href="/profile">Profile</a>
-      <a href="/friends">Friends</a>
-      <a href="/billing">Billing</a>
-      <a href="/my_invites">Group Invites</a>
+  <body class="bg-[#f8fcfa]" style='font-family: Manrope, "Noto Sans", sans-serif;'>
+    <div class="min-h-screen flex flex-col">
+      <!-- Header -->
+      <header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-b-[#e6f4ef] px-10 py-3">
+        <div class="flex items-center gap-4 text-[#0c1c17]">
+          <div class="size-4">
+            <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M24 4H42V17.3333V30.6667H24V44H6V30.6667V17.3333H24V4Z" fill="currentColor"></path>
+            </svg>
+          </div>
+          <h2 class="text-[#0c1c17] text-lg font-bold tracking-tight">SplitPay</h2>
+        </div>
+        <div class="flex items-center gap-8">
+          <nav class="flex gap-9 text-sm font-medium text-[#0c1c17]">
+            <a href="/">Home</a>
+            <a href="/profile">Profile</a>
+            <a href="/friends">Friends</a>
+            <a href="/billing">Billing</a>
+            <a href="/my_invites">Group Invites</a>
+          </nav>
+          <div class="flex items-center gap-4">
+            <button class="h-10 w-10 rounded-full bg-[#e6f4ef] flex items-center justify-center text-[#0c1c17]">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" fill="currentColor" viewBox="0 0 256 256">
+                <path d="M221.8,175.94C216.25,166.38,208,139.33,208,104a80,80,0,1,0-160,0c0,35.34-8.26,62.38-13.81,71.94A16,16,0,0,0,48,200H88.81a40,40,0,0,0,78.38,0H208a16,16,0,0,0,13.8-24.06ZM128,216a24,24,0,0,1-22.62-16h45.24A24,24,0,0,1,128,216Z" />
+              </svg>
+            </button>
+            <a href="/logout" class="px-4 py-2 bg-[#019863] text-white rounded-lg text-sm font-bold hover:bg-[#017f53] transition">
+              Log Out
+            </a>
+          </div>
+        </div>
+      </header>
 
+      <!-- Content -->
+      <main class="px-6 md:px-40 py-8 flex-1">
+        <div class="max-w-[960px] mx-auto">
+          <div class="px-4 py-3">
+            <p class="text-[32px] font-bold text-[#0c1c17]">Billing</p>
+          </div>
+
+          <div class="grid grid-cols-[repeat(auto-fit,minmax(228px,1fr))] gap-3 px-4">
+            <!-- Free -->
+            <article class="flex flex-col gap-4 rounded-lg border border-[#cde9df] bg-[#f8fcfa] p-6">
+              <div>
+                <h3 class="text-base font-bold text-[#0c1c17]">Free</h3>
+                <p class="flex items-baseline gap-1 text-[#0c1c17]">
+                  <span class="text-4xl font-black tracking-[-0.033em]">$0</span>
+                  <span class="text-base font-bold">/month</span>
+                </p>
+              </div>
+              <button data-plan="free"
+                class="select-plan flex h-10 items-center justify-center rounded-lg bg-[#e6f4ef] px-4 text-sm font-bold text-[#0c1c17]">
+                Select
+              </button>
+              <ul class="flex flex-col gap-2 text-[13px] text-[#0c1c17]">
+                <li class="flex gap-3"><span>✔</span> Unlimited manual entries</li>
+                <li class="flex gap-3"><span>✔</span> Unlimited transaction history</li>
+              </ul>
+            </article>
+
+            <!-- Pro -->
+            <article class="flex flex-col gap-4 rounded-lg border border-[#cde9df] bg-[#f8fcfa] p-6">
+              <div>
+                <div class="flex items-center justify-between">
+                  <h3 class="text-base font-bold text-[#0c1c17]">Pro</h3>
+                  <span class="px-3 py-[3px] text-xs font-medium rounded-lg bg-[#019863] text-white">Popular</span>
+                </div>
+                <p class="flex items-baseline gap-1 text-[#0c1c17]">
+                  <span class="text-4xl font-black tracking-[-0.033em]">$2.99</span>
+                  <span class="text-base font-bold">/month</span>
+                </p>
+              </div>
+              <button data-plan="pro"
+                class="select-plan flex h-10 items-center justify-center rounded-lg bg-[#e6f4ef] px-4 text-sm font-bold text-[#0c1c17]">
+                Select
+              </button>
+              <ul class="flex flex-col gap-2 text-[13px] text-[#0c1c17]">
+                <li class="flex gap-3"><span>✔</span> 100 AI scans per month</li>
+                <li class="flex gap-3"><span>✔</span> Unlimited transaction history</li>
+              </ul>
+            </article>
+
+            <!-- Pro+ -->
+            <article class="flex flex-col gap-4 rounded-lg border border-[#cde9df] bg-[#f8fcfa] p-6">
+              <div>
+                <div class="flex items-center justify-between">
+                  <h3 class="text-base font-bold text-[#0c1c17]">Pro+</h3>
+                  <span class="px-3 py-[3px] text-xs font-medium rounded-lg bg-[#019863] text-white">Best Value</span>
+                </div>
+                <p class="flex items-baseline gap-1 text-[#0c1c17]">
+                  <span class="text-4xl font-black tracking-[-0.033em]">$7.99</span>
+                  <span class="text-base font-bold">/month</span>
+                </p>
+              </div>
+              <button data-plan="pro_plus"
+                class="select-plan flex h-10 items-center justify-center rounded-lg bg-[#e6f4ef] px-4 text-sm font-bold text-[#0c1c17]">
+                Select
+              </button>
+              <ul class="flex flex-col gap-2 text-[13px] text-[#0c1c17]">
+                <li class="flex gap-3"><span>✔</span> Unlimited AI scans</li>
+                <li class="flex gap-3"><span>✔</span> Advanced spending analytics (coming soon)</li>
+              </ul>
+            </article>
+          </div>
+        </div>
+      </main>
     </div>
-    <div class="auth-buttons">
-      <a href="/logout">Log out</a>
-    </div>
-  </div>
 
-  <div class="billing-container">
-    <div class="billing-banner">Choose Your Plan</div>
+    <!-- Toast container -->
+    <div id="toast-root" class="fixed top-4 right-4 z-50 space-y-2"></div>
 
-    <!-- Toggle -->
-    <div class="billing-toggle">
-      <button id="monthlyBtn" class="toggle-btn active">Monthly</button>
-      <button id="annualBtn" class="toggle-btn">Annual</button>
-    </div>
-
-    <div class="plans" id="plansContainer">
-      <!-- Free Plan -->
-      <form method="POST">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <input type="hidden" name="plan" value="free" />
-        <div class="plan-box {% if user.subscription_tier == 'free' %}selected{% endif %}">
-          <div class="plan-title">Free</div>
-          <div class="plan-price">$0/mo</div>
-          <div class="plan-features">
-            • Unlimited manual entries<br>
-            • View last 10 transactions<br>
-            • No AI receipt scanning<br><br>
-
-          </div>
-          <button type="submit" class="plan-button">Try Free</button>
-        </div>
-      </form>
-
-      <!-- Pro Monthly -->
-      <form method="POST" action="/create-checkout-session" class="plan-monthly">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <input type="hidden" name="plan" value="pro_monthly" />
-        <div class="plan-box {% if user.subscription_tier == 'pro' %}selected{% endif %}">
-          <div class="plan-title">Pro</div>
-          <div class="plan-price">$2.99/mo</div>
-          <div class="plan-features">
-            • 100 AI receipt scans<br>
-            • Unlimited history<br>
-            
-          </div>
-          <button type="submit" class="plan-button">Upgrade</button>
-        </div>
-      </form>
-
-      <!-- Pro Annual -->
-      <form method="POST" action="/create-checkout-session" class="plan-annual" style="display:none;">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <input type="hidden" name="plan" value="pro_annual" />
-        <div class="plan-box {% if user.subscription_tier == 'pro' %}selected{% endif %}">
-          <div class="plan-title">Pro (Annual)</div>
-          <div class="plan-price">$29.99/year</div>
-          <div class="plan-features">
-            • Unlimited AI receipt scans<br>
-            • Advanced analytics (coming soon!)<br>
-            • Everything in Pro
-
-            • Save 17%
-          </div>
-          <button type="submit" class="plan-button">Upgrade</button>
-        </div>
-      </form>
-
-      <!-- Pro+ Monthly -->
-      <form method="POST" action="/create-checkout-session" class="plan-monthly">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <input type="hidden" name="plan" value="pro_plus_monthly" />
-        <div class="plan-box {% if user.subscription_tier == 'pro_plus' %}selected{% endif %}">
-          <div class="plan-title">Pro+</div>
-          <div class="plan-price">$7.99/mo</div>
-          <div class="plan-features">
-            • Unlimited AI receipt scans<br>
-            • Advanced analytics<br>
-            • Everything in Pro
-          </div>
-          <button type="submit" class="plan-button">Go Pro+</button>
-        </div>
-      </form>
-
-      <!-- Pro+ Annual -->
-      <form method="POST" action="/create-checkout-session" class="plan-annual" style="display:none;">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <input type="hidden" name="plan" value="pro_plus_annual" />
-        <div class="plan-box {% if user.subscription_tier == 'pro_plus' %}selected{% endif %}">
-          <div class="plan-title">Pro+ (Annual)</div>
-          <div class="plan-price">$79.99/year</div>
-          <div class="plan-features">
-            • Unlimited AI receipt scans<br>
-            • Advanced analytics<br>
-            • Everything in Pro<br>
-            • Save 17%
-          </div>
-          <button type="submit" class="plan-button">Go Pro+</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <script>
-    const userTier = "{{ user.subscription_tier }}";
-  </script>
-  <script src="{{ url_for('static', filename='billing.js') }}"></script>
-</body>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+  </body>
 </html>

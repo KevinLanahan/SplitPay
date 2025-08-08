@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Pricing – SplitPay</title>
+    <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Noto+Sans:wght@400;500;700;900&display=swap" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  </head>
+  <body class="bg-[#f8fcfa]" style='font-family: Manrope, "Noto Sans", sans-serif;'>
+    <div class="min-h-screen flex flex-col">
+      <!-- Header (same spacing as profile) -->
+      <header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-b-[#e6f4ef] px-10 py-3">
+        <div class="flex items-center gap-4 text-[#0c1c17]">
+          <div class="size-4">
+            <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M24 4H42V17.3333V30.6667H24V44H6V30.6667V17.3333H24V4Z" fill="currentColor"></path>
+            </svg>
+          </div>
+          <h2 class="text-lg font-bold tracking-[-0.015em]">SplitPay</h2>
+        </div>
+
+        <div class="flex items-center gap-8">
+          <nav class="flex gap-9 text-sm font-medium text-[#0c1c17]">
+            <a href="/">Home</a>
+            <a href="/profile">Profile</a>
+            <a href="/friends">Friends</a>
+            <a href="/billing">Billing</a>
+            <a href="/my_invites">Group Invites</a>
+          </nav>
+          <div class="flex items-center gap-3">
+            {% if 'user_id' in session %}
+              <a href="/logout" class="px-4 py-2 bg-[#019863] text-white rounded-lg text-sm font-bold hover:bg-[#017f53] transition">Log Out</a>
+            {% else %}
+              <a href="/login" class="px-4 py-2 bg-[#e6f4ef] text-[#0c1c17] rounded-lg text-sm font-bold">Log In</a>
+              <a href="/signup" class="px-4 py-2 bg-[#019863] text-white rounded-lg text-sm font-bold hover:bg-[#017f53] transition">Get Started</a>
+            {% endif %}
+          </div>
+        </div>
+      </header>
+
+      <main class="px-10 md:px-40 py-8 flex-1">
+        <div class="max-w-[960px] mx-auto">
+          <h1 class="text-[32px] font-bold text-[#0c1c17] mb-6">Pricing</h1>
+
+          <div class="grid md:grid-cols-3 gap-6">
+            <!-- Free -->
+            <div class="rounded-xl border border-[#e6f4ef] bg-white p-6">
+              <h3 class="text-xl font-bold text-[#0c1c17] mb-1">Free</h3>
+              <p class="text-3xl font-extrabold text-[#0c1c17] mb-4">$0<span class="text-sm font-medium text-[#46a080]"> / mo</span></p>
+              <ul class="space-y-2 text-sm text-[#0c1c17]">
+                <li>• Manual bill split</li>
+                <li>• Add friends & groups</li>
+                <li>• 0 AI receipt scans</li>
+                <li>• Basic history</li>
+              </ul>
+            </div>
+
+            <!-- Pro -->
+            <div class="rounded-xl border border-[#e6f4ef] bg-white p-6">
+              <h3 class="text-xl font-bold text-[#0c1c17] mb-1">Pro</h3>
+              <p class="text-3xl font-extrabold text-[#0c1c17] mb-4">$2.99<span class="text-sm font-medium text-[#46a080]"> / mo</span></p>
+              <ul class="space-y-2 text-sm text-[#0c1c17]">
+                <li>• Everything in Free</li>
+                <li>• AI receipt scans: <strong>100 / mo</strong></li>
+                <li>• Itemized split from photo</li>
+                <li>• Priority support</li>
+              </ul>
+            </div>
+
+            <!-- Pro+ -->
+            <div class="rounded-xl border border-[#e6f4ef] bg-white p-6">
+              <h3 class="text-xl font-bold text-[#0c1c17] mb-1">Pro+</h3>
+              <p class="text-3xl font-extrabold text-[#0c1c17] mb-4">$7.99<span class="text-sm font-medium text-[#46a080]"> / mo</span></p>
+              <ul class="space-y-2 text-sm text-[#0c1c17]">
+                <li>• Everything in Pro</li>
+                <li>• AI receipt scans: <strong>Unlimited</strong></li>
+                <li>• Advanced export & history</li>
+                <li>• Early access features</li>
+              </ul>
+            </div>
+          </div>
+
+          <p class="text-xs text-[#46a080] mt-6">
+            Prices in USD. Subscriptions renew monthly. You can manage or cancel anytime from the Billing page.
+          </p>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>
