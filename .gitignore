@@ -3,3 +3,9 @@
 __pycache__/
 *.pyc
 instance/
+splitpay-ocr-*.json
+
+*.db
+*.sqlite3
+.DS_Store
+static/profile_pics/
