@@ -10,22 +10,18 @@ import stripe, os, re, base64, json
 
 from models import db, User, FriendRequest, Transaction, Group, GroupMember, GroupInvite
 
-# --- Env loading (local: choose .env.test or .env.live; Render uses dashboard vars) ---
 load_dotenv(os.getenv("ENV_FILE") or None, override=True)
 
-# --- Keys / config from env ---
 OPENAI_API_KEY       = (os.getenv("OPENAI_API_KEY") or "").strip()
 STRIPE_SECRET_KEY    = os.getenv("STRIPE_SECRET_KEY")
 STRIPE_PUBLISHABLE   = os.getenv("STRIPE_PUBLISHABLE_KEY")  # (used client-side if needed)
-ednpoint_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
+endpoint_secret      = os.getenv("STRIPE_WEBHOOK_SECRET")
 SECRET_KEY           = os.getenv("SECRET_KEY") or "dev-only-change-me"
 DATABASE_URL         = os.getenv("SQLALCHEMY_DATABASE_URI") or "sqlite:///splitpay.db"
 
-# --- Third-party clients ---
 client = OpenAI(api_key=OPENAI_API_KEY)
 stripe.api_key = STRIPE_SECRET_KEY
 
-# --- Flask app ---
 app = Flask(__name__)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)  # trust Render's proxy
 app.config.update(
@@ -419,31 +415,40 @@ def create_checkout_session():
     data = request.get_json(silent=True) or {}
     selected_plan = data.get('plan') or request.form.get('plan')
 
+    # Pull live (or test) price IDs from env so you never hard-code them
     price_lookup = {
-        'pro': 'price_1RpYaoHt0hudo3iL2MyMM5uU',      
-        'pro_plus': 'price_1RpYd2Ht0hudo3iLCkvcbSqm', 
+        'pro': os.getenv('STRIPE_PRICE_PRO'),
+        'pro_plus': os.getenv('STRIPE_PRICE_PRO_PLUS'),
     }
     price_id = price_lookup.get(selected_plan)
     if not price_id:
-        return jsonify({"error": "Invalid plan selected"}), 400
+        return jsonify({"error": f"Invalid plan '{selected_plan}'. Check STRIPE_PRICE_* env vars."}), 400
 
-    if not user.stripe_customer_id:
-        customer = stripe.Customer.create(email=user.email)
-        user.stripe_customer_id = customer.id
-        db.session.commit()
-    else:
-        customer = stripe.Customer.retrieve(user.stripe_customer_id)
+    try:
+        if not user.stripe_customer_id:
+            customer = stripe.Customer.create(email=user.email)
+            user.stripe_customer_id = customer.id
+            db.session.commit()
+        else:
+            customer = stripe.Customer.retrieve(user.stripe_customer_id)
+    except stripe.error.StripeError as e:
+        return jsonify({"error": f"Stripe customer error: {str(e)}"}), 400
 
-    checkout_session = stripe.checkout.Session.create(
-        payment_method_types=['card'],
-        line_items=[{'price': price_id, 'quantity': 1}],
-        mode='subscription',
-        customer=customer.id,
-        success_url=url_for('payment_success', _external=True),
-        cancel_url=url_for('billing', _external=True),
-        metadata={'user_id': str(user.id)}
-    )
-    return jsonify({"url": checkout_session.url})
+    try:
+        checkout_session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=[{'price': price_id, 'quantity': 1}],
+            mode='subscription',
+            customer=customer.id,
+            success_url=url_for('payment_success', _external=True) + "?session_id={CHECKOUT_SESSION_ID}",
+            cancel_url=url_for('billing', _external=True),
+            metadata={'user_id': str(user.id)}
+        )
+        return jsonify({"url": checkout_session.url})
+    except stripe.error.StripeError as e:
+        return jsonify({"error": str(e)}), 400
+    except Exception as e:
+        return jsonify({"error": "Unexpected error creating checkout session"}), 500
 
 
 
@@ -464,7 +469,6 @@ def set_plan():
 
 
 
-
 @csrf.exempt
 @app.route('/payment_success')
 def payment_success():
@@ -472,123 +476,127 @@ def payment_success():
         return redirect(url_for('login'))
 
     session_id = request.args.get('session_id')
-    if session_id:
-        try:
-            sess = stripe.checkout.Session.retrieve(session_id, expand=["subscription", "customer"])
-            stripe_customer_id = sess.customer
-            user = User.query.get(session['user_id'])
-            if user and not user.stripe_customer_id:
-                user.stripe_customer_id = stripe_customer_id
+    if not session_id:
+        return render_template('payment_success.html')
 
-            sub = sess.subscription
-            if isinstance(sub, str):
-                sub = stripe.Subscription.retrieve(sub, expand=["items.data.price"])
-            price_id = sub["items"]["data"][0]["price"]["id"]
+    try:
+        sess = stripe.checkout.Session.retrieve(
+            session_id,
+            expand=["subscription", "customer"]
+        )
 
-            tier_lookup = {
-                'price_1RpYaoHt0hudo3iL2MyMM5uU': 'pro',       
-                'price_1RpYd2Ht0hudo3iLCkvcbSqm': 'pro_plus',  
-            }
-            if user:
-                new_tier = tier_lookup.get(price_id)
-                if new_tier:
-                    user.subscription_tier = new_tier
-                    db.session.commit()
-        except Exception as e:
-            print("payment_success confirm error:", e)
+        stripe_customer_id = sess.customer
+        user = User.query.get(session['user_id'])
+        if user and not user.stripe_customer_id:
+            user.stripe_customer_id = stripe_customer_id
+
+        sub = sess.subscription
+        if isinstance(sub, str):
+            sub = stripe.Subscription.retrieve(sub, expand=["items.data.price"])
+        price_id = sub["items"]["data"][0]["price"]["id"]
+
+        PRICE_TO_TIER = {
+            os.getenv('STRIPE_PRICE_PRO'): 'pro',
+            os.getenv('STRIPE_PRICE_PRO_PLUS'): 'pro_plus',
+        }
+
+        if user:
+            new_tier = PRICE_TO_TIER.get(price_id)
+            if new_tier:
+                user.subscription_tier = new_tier
+                db.session.commit()
+    except Exception as e:
+        print("payment_success confirm error:", e)
 
     return render_template('payment_success.html')
-
 
 
 
 @csrf.exempt
 @app.route("/webhook", methods=["POST"])
 def stripe_webhook():
+    # Raw payload + signature
     payload = request.data
-    sig_header = request.headers.get("stripe-signature")
-    print("🔔 Incoming webhook!")
+    sig_header = request.headers.get("Stripe-Signature") or request.headers.get("stripe-signature")
+    if not sig_header:
+        return jsonify(success=False, error="Missing Stripe-Signature"), 400
 
+    # Verify signature
     try:
         event = stripe.Webhook.construct_event(payload, sig_header, endpoint_secret)
         print("✅ Event verified:", event["type"])
-    except ValueError as e:
-        print("Invalid payload:", e)
-        return jsonify(success=False), 400
-    except stripe.error.SignatureVerificationError as e:
-        print("Invalid signature:", e)
+    except (ValueError, stripe.error.SignatureVerificationError) as e:
+        print("❌ Webhook verification failed:", e)
         return jsonify(success=False), 400
 
-    if event["type"] == "checkout.session.completed":
-        session = event["data"]["object"]
-        stripe_customer_id = session["customer"]
-        user_id = session["metadata"].get("user_id") 
+    # Map price -> tier from ENV (works in Test or Live depending on your keys)
+    PRICE_TO_TIER = {
+        os.getenv("STRIPE_PRICE_PRO"): "pro",
+        os.getenv("STRIPE_PRICE_PRO_PLUS"): "pro_plus",
+    }
 
-        try:
-            subscriptions = stripe.Subscription.list(customer=stripe_customer_id)
-            if subscriptions.data:
-                latest_sub = subscriptions.data[0]
-                plan_id = latest_sub["items"]["data"][0]["price"]["id"]
-                print("📦 Stripe plan_id:", plan_id)
+    try:
+        etype = event["type"]
 
-                user = User.query.get(user_id)
-                print("Webhook matched user:", user.id if user else "None")
+        # 1) Checkout completed: set tier based on the subscription's price
+        if etype == "checkout.session.completed":
+            obj = event["data"]["object"]
+            stripe_customer_id = obj.get("customer")
+            user_id = (obj.get("metadata") or {}).get("user_id")
 
-                if user:
-                    user.stripe_customer_id = stripe_customer_id  
-                    tier_lookup = {
-                        'price_1RpYaoHt0hudo3iL2MyMM5uU': 'pro',
-                        'price_1RpYbKHt0hudo3iLmNbruDkC': 'pro',
-                        'price_1RpYd2Ht0hudo3iLCkvcbSqm': 'pro_plus',
-                        'price_1RpYdPHt0hudo3iLc3c2CvPb': 'pro_plus'
-                    }
-
-                    user.subscription_tier = tier_lookup.get(plan_id, 'free')
-
-                    db.session.commit()
-                    print(f"✅ {user.email}'s subscription updated to {user.subscription_tier}")
-
-                else:
-                    print("No user found with ID:", user_id)
-        except Exception as e:
-            print("Error updating user after checkout:", str(e))
-
-    elif event["type"] == "customer.subscription.updated":
-        subscription = event["data"]["object"]
-        stripe_customer_id = subscription["customer"]
-        plan_id = subscription["items"]["data"][0]["price"]["id"]
-
-        user = User.query.filter_by(stripe_customer_id=stripe_customer_id).first()
-        print("Webhook matched user:", user.id if user else "None")
-
-        if user:
-            if "pro_plus" in plan_id:
-                user.subscription_tier = "pro_plus"
-            elif "pro" in plan_id:
-                user.subscription_tier = "pro"
+            # Prefer the subscription on the session (more accurate than listing)
+            sub_id = obj.get("subscription")
+            if isinstance(sub_id, str):
+                sub = stripe.Subscription.retrieve(sub_id, expand=["items.data.price"])
             else:
+                # Fallback: list latest active subscription for the customer
+                subs = stripe.Subscription.list(customer=stripe_customer_id, status="all", limit=1)
+                sub = subs.data[0] if subs.data else None
+
+            price_id = None
+            if sub and sub.get("items", {}).get("data"):
+                price_id = sub["items"]["data"][0]["price"]["id"]
+
+            user = None
+            if user_id:
+                try:
+                    user = User.query.get(int(user_id))
+                except Exception:
+                    user = None
+
+            if not user and stripe_customer_id:
+                user = User.query.filter_by(stripe_customer_id=stripe_customer_id).first()
+
+            if user:
+                if stripe_customer_id and not user.stripe_customer_id:
+                    user.stripe_customer_id = stripe_customer_id
+                user.subscription_tier = PRICE_TO_TIER.get(price_id, "free")
+                db.session.commit()
+                print(f"✅ {user.email} set to {user.subscription_tier} via checkout.session.completed")
+
+        elif etype == "customer.subscription.updated":
+            sub = event["data"]["object"]
+            stripe_customer_id = sub.get("customer")
+            user = User.query.filter_by(stripe_customer_id=stripe_customer_id).first()
+            if user and sub.get("items", {}).get("data"):
+                price_id = sub["items"]["data"][0]["price"]["id"]
+                user.subscription_tier = PRICE_TO_TIER.get(price_id, "free")
+                db.session.commit()
+                print(f"🔄 {user.email} updated to {user.subscription_tier}")
+
+        elif etype == "customer.subscription.deleted":
+            sub = event["data"]["object"]
+            stripe_customer_id = sub.get("customer")
+            user = User.query.filter_by(stripe_customer_id=stripe_customer_id).first()
+            if user:
                 user.subscription_tier = "free"
-            db.session.commit()
-            print(f"🔄 {user.email}'s subscription was updated to {user.subscription_tier}")
-        else:
-            print("No user found with stripe_customer_id:", stripe_customer_id)
+                db.session.commit()
+                print(f"⤵️ {user.email} downgraded to free (subscription canceled)")
 
-    elif event["type"] == "customer.subscription.deleted":
-        subscription = event["data"]["object"]
-        stripe_customer_id = subscription["customer"]
-
-        user = User.query.filter_by(stripe_customer_id=stripe_customer_id).first()
-        print("Webhook matched user:", user.id if user else "None")
-
-        if user:
-            user.subscription_tier = "free"
-            db.session.commit()
-            print(f"{user.email}'s subscription was canceled")
-        else:
-            print("No user found with stripe_customer_id:", stripe_customer_id)
+    except Exception as e:
+        print("Webhook handler error:", e)
 
     return jsonify(success=True), 200
-
 
 
 @csrf.exempt
