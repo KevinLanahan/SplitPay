@@ -1,50 +1,48 @@
 from flask import Flask, request, redirect, render_template, session, url_for, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
-from models import db, User, FriendRequest, Transaction, Group, GroupMember
-from models import GroupInvite 
-import os
-import re
+from werkzeug.middleware.proxy_fix import ProxyFix
+from flask_wtf.csrf import CSRFProtect
 from datetime import datetime, timezone
 from dotenv import load_dotenv
 from openai import OpenAI
-import base64
-import json
-import stripe 
-from flask_wtf.csrf import CSRFProtect
+import stripe, os, re, base64, json
 
+from models import db, User, FriendRequest, Transaction, Group, GroupMember, GroupInvite
 
+# --- Env loading (local: choose .env.test or .env.live; Render uses dashboard vars) ---
+load_dotenv(os.getenv("ENV_FILE") or None, override=True)
 
+# --- Keys / config from env ---
+OPENAI_API_KEY       = (os.getenv("OPENAI_API_KEY") or "").strip()
+STRIPE_SECRET_KEY    = os.getenv("STRIPE_SECRET_KEY")
+STRIPE_PUBLISHABLE   = os.getenv("STRIPE_PUBLISHABLE_KEY")  # (used client-side if needed)
+ednpoint_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
+SECRET_KEY           = os.getenv("SECRET_KEY") or "dev-only-change-me"
+DATABASE_URL         = os.getenv("SQLALCHEMY_DATABASE_URI") or "sqlite:///splitpay.db"
 
-load_dotenv(override=True)
-raw_key = os.getenv("OPENAI_API_KEY")
-client = OpenAI(api_key=(raw_key or "").strip())
+# --- Third-party clients ---
+client = OpenAI(api_key=OPENAI_API_KEY)
+stripe.api_key = STRIPE_SECRET_KEY
 
-
-
-stripe.api_key = os.getenv("STRIPE_SECRET_KEY")  
-endpoint_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
-
+# --- Flask app ---
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///splitpay.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.secret_key = 'your_secret_key_here'
-
-
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)  # trust Render's proxy
+app.config.update(
+    SQLALCHEMY_DATABASE_URI=DATABASE_URL,
+    SQLALCHEMY_TRACK_MODIFICATIONS=False,
+    SECRET_KEY=SECRET_KEY,
+    UPLOAD_FOLDER="static/profile_pics"
+)
 csrf = CSRFProtect(app)
 
-UPLOAD_FOLDER = 'static/profile_pics'
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-
+# --- DB bootstrap (ok for now; later consider Alembic) ---
 db.init_app(app)
-
 with app.app_context():
     db.create_all()
 
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
+ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif"}
+def allowed_file(fn): return "." in fn and fn.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
 @csrf.exempt
@@ -100,11 +98,8 @@ def signup():
                 error="That email is already registered. Please log in instead."
             )
 
-        # Hash password
-        from werkzeug.security import generate_password_hash
         hashed_password = generate_password_hash(password)
 
-        # Create and save new user
         new_user = User(
             full_name=full_name,
             username=username,
@@ -114,19 +109,9 @@ def signup():
         db.session.add(new_user)
         db.session.commit()
 
-        # Redirect to login
         return redirect(url_for("login"))
 
     return render_template("signup.html")
-
-
-
-
-
-
-
-
-
 
 
 @csrf.exempt
@@ -188,10 +173,6 @@ def friends():
 
 
 
-
-
-
-
 @csrf.exempt
 @app.route('/accept_request/<int:request_id>', methods=['POST'])
 def accept_request(request_id):
@@ -221,7 +202,6 @@ def profile():
     if 'user_id' not in session:
         return redirect(url_for('login'))
 
-    # Ensure we fetch fresh data
     db.session.expire_all()
     user = db.session.get(User, session['user_id'])
 
@@ -235,7 +215,6 @@ def profile():
                 user.profile_pic = filename
                 db.session.commit()
 
-    # 🔧 Use full_name to match how transactions are saved elsewhere
     transactions = (
         Transaction.query
         .filter_by(payer=user.full_name)
@@ -287,14 +266,11 @@ def calculate_split():
                 if owner == paid_by:
                     continue
                 balances[owner] = balances.get(owner, 0) + split_amount
-            # Subtract from payor
             balances[paid_by] = balances.get(paid_by, 0) - split_amount * len([o for o in owners if o != paid_by])
 
-        # Round balances for clarity
         for person in balances:
             balances[person] = round(balances[person], 2)
 
-        # ✅ SAVE TRANSACTION IF USER IS THE PAYOR
         user_id = session.get("user_id")
         if user_id:
             user = User.query.get(user_id)
@@ -330,7 +306,6 @@ def save_transaction():
     description = data.get("description")
     date = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
 
-    # ✅ ADD THIS PRINT BELOW
     print("Saving transaction with payer:", payer)
 
     new_txn = Transaction(payer=payer, amount=amount, description=description, date=date)
@@ -375,7 +350,6 @@ def billing():
     if request.method == 'POST':
         selected_plan = request.form.get('plan')
 
-        # ✅ Normalize plan to just 'free', 'pro', or 'pro_plus'
         normalized_plan = selected_plan.split('_')[0] if selected_plan else None
 
         if normalized_plan in ['free', 'pro', 'pro_plus']:
@@ -415,7 +389,7 @@ def confirm_transaction():
     description = "\n".join(description_lines)
 
     transaction = Transaction(
-        payer=user.full_name,  # ← keep it consistent
+        payer=user.full_name,  
         amount=round(total_amount, 2),
         date=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         description=description
@@ -446,8 +420,8 @@ def create_checkout_session():
     selected_plan = data.get('plan') or request.form.get('plan')
 
     price_lookup = {
-        'pro': 'price_1RpYaoHt0hudo3iL2MyMM5uU',      # $2.99/mo
-        'pro_plus': 'price_1RpYd2Ht0hudo3iLCkvcbSqm', # $7.99/mo
+        'pro': 'price_1RpYaoHt0hudo3iL2MyMM5uU',      
+        'pro_plus': 'price_1RpYd2Ht0hudo3iLCkvcbSqm', 
     }
     price_id = price_lookup.get(selected_plan)
     if not price_id:
@@ -502,20 +476,18 @@ def payment_success():
         try:
             sess = stripe.checkout.Session.retrieve(session_id, expand=["subscription", "customer"])
             stripe_customer_id = sess.customer
-            # Persist customer id just in case
             user = User.query.get(session['user_id'])
             if user and not user.stripe_customer_id:
                 user.stripe_customer_id = stripe_customer_id
 
-            # Get price id from subscription
             sub = sess.subscription
             if isinstance(sub, str):
                 sub = stripe.Subscription.retrieve(sub, expand=["items.data.price"])
             price_id = sub["items"]["data"][0]["price"]["id"]
 
             tier_lookup = {
-                'price_1RpYaoHt0hudo3iL2MyMM5uU': 'pro',       # $2.99
-                'price_1RpYd2Ht0hudo3iLCkvcbSqm': 'pro_plus',  # $7.99
+                'price_1RpYaoHt0hudo3iL2MyMM5uU': 'pro',       
+                'price_1RpYd2Ht0hudo3iLCkvcbSqm': 'pro_plus',  
             }
             if user:
                 new_tier = tier_lookup.get(price_id)
@@ -523,7 +495,6 @@ def payment_success():
                     user.subscription_tier = new_tier
                     db.session.commit()
         except Exception as e:
-            # don’t crash success page if Stripe call fails
             print("payment_success confirm error:", e)
 
     return render_template('payment_success.html')
@@ -542,17 +513,16 @@ def stripe_webhook():
         event = stripe.Webhook.construct_event(payload, sig_header, endpoint_secret)
         print("✅ Event verified:", event["type"])
     except ValueError as e:
-        print("❌ Invalid payload:", e)
+        print("Invalid payload:", e)
         return jsonify(success=False), 400
     except stripe.error.SignatureVerificationError as e:
-        print("❌ Invalid signature:", e)
+        print("Invalid signature:", e)
         return jsonify(success=False), 400
 
-    # 🔥 Handle checkout completion (initial subscription)
     if event["type"] == "checkout.session.completed":
         session = event["data"]["object"]
         stripe_customer_id = session["customer"]
-        user_id = session["metadata"].get("user_id")  # ✅ Retrieve user_id from metadata
+        user_id = session["metadata"].get("user_id") 
 
         try:
             subscriptions = stripe.Subscription.list(customer=stripe_customer_id)
@@ -565,7 +535,7 @@ def stripe_webhook():
                 print("Webhook matched user:", user.id if user else "None")
 
                 if user:
-                    user.stripe_customer_id = stripe_customer_id  # ✅ Save customer ID
+                    user.stripe_customer_id = stripe_customer_id  
                     tier_lookup = {
                         'price_1RpYaoHt0hudo3iL2MyMM5uU': 'pro',
                         'price_1RpYbKHt0hudo3iLmNbruDkC': 'pro',
@@ -579,11 +549,10 @@ def stripe_webhook():
                     print(f"✅ {user.email}'s subscription updated to {user.subscription_tier}")
 
                 else:
-                    print("❗ No user found with ID:", user_id)
+                    print("No user found with ID:", user_id)
         except Exception as e:
-            print("❌ Error updating user after checkout:", str(e))
+            print("Error updating user after checkout:", str(e))
 
-    # 🔄 Handle updates to subscriptions (e.g., plan change)
     elif event["type"] == "customer.subscription.updated":
         subscription = event["data"]["object"]
         stripe_customer_id = subscription["customer"]
@@ -602,7 +571,7 @@ def stripe_webhook():
             db.session.commit()
             print(f"🔄 {user.email}'s subscription was updated to {user.subscription_tier}")
         else:
-            print("❗ No user found with stripe_customer_id:", stripe_customer_id)
+            print("No user found with stripe_customer_id:", stripe_customer_id)
 
     elif event["type"] == "customer.subscription.deleted":
         subscription = event["data"]["object"]
@@ -614,9 +583,9 @@ def stripe_webhook():
         if user:
             user.subscription_tier = "free"
             db.session.commit()
-            print(f"❌ {user.email}'s subscription was canceled")
+            print(f"{user.email}'s subscription was canceled")
         else:
-            print("❗ No user found with stripe_customer_id:", stripe_customer_id)
+            print("No user found with stripe_customer_id:", stripe_customer_id)
 
     return jsonify(success=True), 200
 
@@ -650,7 +619,6 @@ def group_details():
     if not group:
         return jsonify({"error": "Group not found"}), 404
 
-    # ✅ check if current user is a member of this group
     is_member = GroupMember.query.filter_by(group_id=group.id, user_id=user_id).first()
     if not is_member:
         return jsonify({"error": "Not a member of this group"}), 403
@@ -680,7 +648,7 @@ def group_details():
 
 
 @app.route('/create_group', methods=['POST'])
-@csrf.exempt  # Keep this until login_required is re-enabled
+@csrf.exempt  
 def create_group():
     data = request.get_json()
     group_name = data.get("name")
@@ -693,7 +661,6 @@ def create_group():
     db.session.add(group)
     db.session.commit()
 
-    # Add creator as member
     member = GroupMember(group_id=group.id, user_id=user_id)
     db.session.add(member)
     db.session.commit()
@@ -713,7 +680,6 @@ def leave_group():
     if not group_id or not user_id:
         return jsonify({"error": "Missing data"}), 400
 
-    # Remove from GroupMember table
     GroupMember.query.filter_by(group_id=group_id, user_id=user_id).delete()
     db.session.commit()
     return jsonify({"message": "You left the group."})
@@ -733,7 +699,6 @@ def delete_group():
     if group.creator_id != session.get("user_id"):
         return jsonify({"error": "Unauthorized"}), 403
 
-    # Delete all members first, then the group
     GroupMember.query.filter_by(group_id=group.id).delete()
     db.session.delete(group)
     db.session.commit()
@@ -752,8 +717,8 @@ def pending_group_invites():
     invites = (
         db.session.query(GroupInvite, Group.name, User.username)
         .join(Group, Group.id == GroupInvite.group_id)
-        .join(User, User.id == GroupInvite.from_user_id)   # inviter
-        .filter(GroupInvite.to_user_id == user_id)          # invitee
+        .join(User, User.id == GroupInvite.from_user_id)   
+        .filter(GroupInvite.to_user_id == user_id)          
         .all()
     )
     results = [{
@@ -814,17 +779,14 @@ def invite_to_group():
     if not group or not invitee:
         return jsonify({"success": False, "error": "Group or user not found"}), 404
 
-    # Already a member?
     existing_member = GroupMember.query.filter_by(group_id=group.id, user_id=invitee.id).first()
     if existing_member:
         return jsonify({"success": False, "error": "User is already a group member"}), 400
 
-    # Already invited?
     existing_invite = GroupInvite.query.filter_by(group_id=group.id, to_user_id=invitee.id, status='pending').first()
     if existing_invite:
         return jsonify({"success": False, "error": "User already invited"}), 400
 
-    # Create new invite
     invite = GroupInvite(
         group_id=group.id,
         from_user_id=inviter_id,
@@ -849,7 +811,7 @@ def my_invites():
     rows = (
         db.session.query(GroupInvite, Group.name, User.full_name)
         .join(Group, Group.id == GroupInvite.group_id)
-        .join(User, User.id == GroupInvite.from_user_id)   # inviter
+        .join(User, User.id == GroupInvite.from_user_id)   
         .filter(GroupInvite.to_user_id == user.id)
         .all()
     )
@@ -894,21 +856,18 @@ def upload_receipt():
 
     user = User.query.get(session['user_id'])
 
-    # Reset scan count if month changed
     now = datetime.now(timezone.utc)
     if user.scan_reset_date is None or now.month != user.scan_reset_date.month or now.year != user.scan_reset_date.year:
         user.scan_count = 0
         user.scan_reset_date = now
         db.session.commit()
 
-    # Tier checks
     if user.subscription_tier == 'free':
         return {"error": "AI receipt uploads are only available on Pro and Pro+ plans."}, 403
 
     if user.subscription_tier == 'pro' and user.scan_count >= 100:
         return {"error": "You have reached your monthly limit of 100 AI receipt scans."}, 403
 
-    # Receipt validation
     if 'receipt' not in request.files:
         return {"error": "No file uploaded"}, 400
 
@@ -919,7 +878,6 @@ def upload_receipt():
     image_bytes = file.read()
     image_base64 = base64.b64encode(image_bytes).decode('utf-8')
 
-    # Call GPT-4o for parsing — wrapped in try/except
     try:
         response = client.chat.completions.create(
             model="gpt-4o",
@@ -948,15 +906,12 @@ def upload_receipt():
             max_tokens=1000
         )
     except Exception as e:
-        # Full error to server logs
-        print("❌ OpenAI API error:", repr(e))
+        print("OpenAI API error:", repr(e))
         return {"error": "AI parsing failed. Check your API key or try again later."}, 500
 
-    # If API call succeeded, continue
     user.scan_count += 1
     db.session.commit()
 
-    # 🔥 Get group members or fallback to friends
     group_id = request.form.get('group_id')
     if group_id:
         members = (
@@ -969,7 +924,6 @@ def upload_receipt():
     else:
         friends = [{"email": f.email, "full_name": f.full_name or f.username} for f in user.friends]
 
-    # Parse GPT response
     reply = response.choices[0].message.content.strip()
     print("🧾 AI raw reply:", reply)
 
@@ -979,14 +933,13 @@ def upload_receipt():
     try:
         items = json.loads(cleaned)
     except Exception as e:
-        print("❌ Failed to parse AI response:", e)
-        print("🪵 Raw content received:", cleaned)
+        print("Failed to parse AI response:", e)
+        print("Raw content received:", cleaned)
         return {"error": "Could not parse items from receipt."}, 400
 
     if not items:
         return {"error": "No items found in receipt"}, 400
 
-    # Auto-assign tax to all owners
     owners_set = set()
     for item in items:
         if item.get("name", "").lower() != "tax":
@@ -1012,4 +965,4 @@ def upload_receipt():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=False)
