@@ -911,6 +911,39 @@ def get_group_members(group_id):
         for m in members
     ])
 
+@csrf.exempt
+@app.route("/groups/<int:group_id>/panel")
+def group_panel(group_id):
+    if "user_id" not in session:
+        return "Unauthorized", 401
+
+    group = Group.query.get_or_404(group_id)
+
+    # Fetch members of this group
+    members = (
+        db.session.query(User)
+        .join(GroupMember, GroupMember.user_id == User.id)
+        .filter(GroupMember.group_id == group_id)
+        .all()
+    )
+
+    # Only allow members to view
+    if not any(m.id == session["user_id"] for m in members):
+        return "Forbidden", 403
+
+    # Minimal HTML snippet that your sidebar drops in
+    items = "".join(
+    f'<li class="py-0.5">{(m.full_name or m.username or m.email)}</li>'
+    for m in members
+    ) or '<li class="text-gray-500">No members yet</li>'
+
+    html = f"""
+    <ul class="text-sm list-disc pl-5 mt-2">
+    {items}
+    </ul>
+    """
+
+    return html, 200
 
 
 @csrf.exempt

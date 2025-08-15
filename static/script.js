@@ -498,6 +498,8 @@ async function loadList() {
         return;
       }
 
+      
+
       if (kind === "ginvite") {
         if (isAccept) {
           const ok = await post("/accept_group_invite", { invite_id: id }, { asJson: true });
@@ -569,15 +571,31 @@ async function loadList() {
 // ===========================
 //   Sidebar group helpers
 // ===========================
+let openGroupId = null;
 function attachGroupClickListener(li) {
   li.addEventListener("click", async () => {
     const groupId = li.dataset.groupId;
+    const panel = document.getElementById("group-panel");
+
+    // If this group is already open, clicking it again will close the panel
+    if (openGroupId === groupId && !panel.classList.contains("hidden")) {
+      panel.classList.add("hidden");
+      panel.innerHTML = "";
+      openGroupId = null;
+
+      // (Optional) update aria flags
+      document.querySelectorAll(".group-btn").forEach(b => b.setAttribute("aria-expanded", "false"));
+      return;
+    }
+
+    // Open (or switch to) this group
+    openGroupId = groupId;
+    document.querySelectorAll(".group-btn").forEach(b => b.setAttribute("aria-expanded", b === li ? "true" : "false"));
 
     try {
       const res = await fetch(`/group/${groupId}`);
       const data = await res.json();
 
-      const panel = document.getElementById("group-panel");
       panel.innerHTML = `
         <h3 class="text-lg font-bold mb-2">${data.name}</h3>
         <ul class="mb-4 space-y-1">
@@ -617,6 +635,8 @@ function attachGroupClickListener(li) {
           .then((d) => {
             alert(d.message || "Left group.");
             panel.classList.add("hidden");
+            panel.innerHTML = "";
+            openGroupId = null;
             li.remove();
           })
           .catch((err) => {
@@ -628,7 +648,12 @@ function attachGroupClickListener(li) {
       console.error("Error loading group:", err);
     }
   });
+
+  // Accessibility niceties
+  li.setAttribute("role", "button");
+  li.setAttribute("aria-expanded", "false");
 }
+
 
 // ===========================
 //   Toast + billing helpers
@@ -701,3 +726,14 @@ document.querySelectorAll(".select-plan").forEach((btn) => {
   });
 });
 
+
+document.addEventListener("click", (e) => {
+  const panel = document.getElementById("group-panel");
+  if (!panel) return;
+  if (!e.target.closest("#group-panel") && !e.target.closest(".group-btn")) {
+    panel.classList.add("hidden");
+    panel.innerHTML = "";
+    openGroupId = null;
+    document.querySelectorAll(".group-btn").forEach(b => b.setAttribute("aria-expanded", "false"));
+  }
+});
