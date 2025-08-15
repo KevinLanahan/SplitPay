@@ -40,34 +40,46 @@
             {{ error }}
           </div>
           {% endif %}
-
           <!-- Sign In Form -->
-          <form action="/login" method="POST" class="space-y-4">
+          <form action="/login" method="POST" class="space-y-4" autocomplete="on">
+  
+            <!-- Dummy fields to block aggressive autofill -->
+            <input type="text"
+                   name="fake_username"
+                   id="fake_username"
+                   autocomplete="off"
+                   style="position:absolute; left:-9999px; width:1px; height:1px; overflow:hidden;">
+            
+            <input type="password"
+                   name="fake_password"
+                   id="fake_password"
+                   autocomplete="off"
+                   style="position:absolute; left:-9999px; width:1px; height:1px; overflow:hidden;">
+          
             <!-- Email -->
             <label class="block">
               <p class="text-[#0c1c17] font-medium mb-2">Email Address</p>
-              <input
-                type="email"
-                name="email"
-                placeholder="Enter your email"
-                autocomplete="email"
-                required
-                class="form-input w-full rounded-lg bg-[#e6f4ef] h-14 px-4 placeholder:text-[#46a080] border-none focus:ring-0"
-              />
+              <input type="email"
+                     name="email"
+                     placeholder="Enter your email"
+                     autocomplete="username"
+                     required
+                     class="form-input w-full rounded-lg bg-[#e6f4ef] h-14 px-4 placeholder:text-[#4a6a80] border-none focus:ring-0">
             </label>
-
+          
             <!-- Password -->
             <label class="block">
               <p class="text-[#0c1c17] font-medium mb-2">Password</p>
-              <input
-                type="password"
-                name="password"
-                placeholder="Enter your password"
-                autocomplete="current-password"
-                required
-                class="form-input w-full rounded-lg bg-[#e6f4ef] h-14 px-4 placeholder:text-[#46a080] border-none focus:ring-0"
-              />
+              <input type="password"
+                     name="password"
+                     placeholder="Enter your password"
+                     autocomplete="current-password"
+                     required
+                     class="form-input w-full rounded-lg bg-[#e6f4ef] h-14 px-4 placeholder:text-[#4a6a80] border-none focus:ring-0">
             </label>
+          
+          </form>
+          
 
             <!-- Remember + Forgot -->
             <div class="flex items-center justify-between">
