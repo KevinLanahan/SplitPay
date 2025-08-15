@@ -1,6 +1,10 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Sign In - SplitPay</title>
+
     <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin />
     <link
       rel="stylesheet"
@@ -8,7 +12,6 @@
       onload="this.rel='stylesheet'"
       href="https://fonts.googleapis.com/css2?display=swap&family=Manrope:wght@400;500;700;800&family=Noto+Sans:wght@400;500;700;900"
     />
-    <title>Sign In - SplitPay</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
   </head>
 
@@ -31,6 +34,13 @@
         <div class="w-full max-w-[512px] bg-white rounded-xl shadow-md p-8">
           <h2 class="text-[#0c1c17] text-[28px] font-bold text-center mb-6">Welcome back</h2>
 
+          <!-- Error flash (optional) -->
+          {% if error %}
+          <div class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {{ error }}
+          </div>
+          {% endif %}
+
           <!-- Sign In Form -->
           <form action="/login" method="POST" class="space-y-4">
             <!-- Email -->
@@ -40,6 +50,7 @@
                 type="email"
                 name="email"
                 placeholder="Enter your email"
+                autocomplete="email"
                 required
                 class="form-input w-full rounded-lg bg-[#e6f4ef] h-14 px-4 placeholder:text-[#46a080] border-none focus:ring-0"
               />
@@ -52,23 +63,31 @@
                 type="password"
                 name="password"
                 placeholder="Enter your password"
+                autocomplete="current-password"
                 required
                 class="form-input w-full rounded-lg bg-[#e6f4ef] h-14 px-4 placeholder:text-[#46a080] border-none focus:ring-0"
               />
             </label>
 
-            <!-- Remember me -->
+            <!-- Remember + Forgot -->
             <div class="flex items-center justify-between">
-              <label class="inline-flex items-center gap-2 cursor-pointer select-none">
-                <input type="checkbox" name="remember" class="sr-only peer" />
-                <span
-                  class="relative flex h-[31px] w-[51px] items-center rounded-full bg-[#e6f4ef] p-0.5
-                         peer-checked:justify-end peer-checked:bg-[#019863]">
-                  <span class="h-full w-[27px] rounded-full bg-white shadow-md"></span>
-                </span>
-                <span class="text-[#0c1c17] text-base">Remember me</span>
-              </label>
-              <a href="#" class="text-[#46a080] text-sm underline">Forgot Password?</a>
+              <div class="flex items-center gap-3">
+                <!-- real checkbox (hidden) -->
+                <input id="remember" name="remember" type="checkbox" class="sr-only peer" />
+
+                <!-- track + knob (pseudo-element) -->
+                <label for="remember"
+                  class="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-300 transition
+                         peer-checked:bg-emerald-600 cursor-pointer
+                         after:content-[''] after:absolute after:left-0.5 after:h-5 after:w-5
+                         after:rounded-full after:bg-white after:shadow after:transition-transform
+                         after:translate-x-0 peer-checked:after:translate-x-5">
+                </label>
+
+                <label for="remember" class="text-sm text-gray-700 cursor-pointer">Remember me</label>
+              </div>
+
+              <a href="/forgot-password" class="text-sm text-[#46a080] underline">Forgot Password?</a>
             </div>
 
             <!-- Submit -->

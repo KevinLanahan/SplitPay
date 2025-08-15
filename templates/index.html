@@ -22,12 +22,8 @@
       .choices__list--dropdown input[type="checkbox"] {
         pointer-events: none;
       }
-      .group-btn {
-        cursor: pointer;
-      }
-      .group-btn:hover {
-        text-decoration: underline;
-      }
+      .group-btn { cursor: pointer; }
+      .group-btn:hover { text-decoration: underline; }
     </style>
 
     <title>SplitPay</title>
@@ -36,40 +32,64 @@
   <body class="bg-[#f8fcfa] font-[Manrope,Noto Sans,sans-serif]">
     <div class="min-h-screen flex flex-col">
       <!-- 🔷 Header/Nav -->
-      <!-- 🔷 Navigation Bar -->
-<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-b-[#e6f4ef] px-10 py-3">
-  <div class="flex items-center gap-4 text-[#0c1c17]">
-    <div class="size-4">
-      <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path fill-rule="evenodd" clip-rule="evenodd" d="M24 4H42V17.3333V30.6667H24V44H6V30.6667V17.3333H24V4Z" fill="currentColor"></path>
-      </svg>
-    </div>
-    <h2 class="text-[#0c1c17] text-lg font-bold tracking-tight">SplitPay</h2>
-  </div>
-  <div class="flex items-center gap-8">
-    <nav class="flex gap-9 text-sm font-medium text-[#0c1c17]">
-      <a href="/">Home</a>
-      <a href="/profile">Profile</a>
-      <a href="/friends">Friends</a>
-      <a href="/billing">Billing</a>
-      <a href="/my_invites">Group Invites</a>
-    </nav>
-    <div class="flex items-center gap-4">
-      <!-- Bell Icon -->
-      <button class="h-10 w-10 rounded-full bg-[#e6f4ef] flex items-center justify-center text-[#0c1c17]">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" fill="currentColor" viewBox="0 0 256 256">
-          <path d="M221.8,175.94C216.25,166.38,208,139.33,208,104a80,80,0,1,0-160,0c0,35.34-8.26,62.38-13.81,71.94A16,16,0,0,0,48,200H88.81a40,40,0,0,0,78.38,0H208a16,16,0,0,0,13.8-24.06ZM128,216a24,24,0,0,1-22.62-16h45.24A24,24,0,0,1,128,216Z" />
-        </svg>
-      </button>
-      <!-- Log Out Button -->
-      <a href="/logout" class="px-4 py-2 bg-[#019863] text-white rounded-lg text-sm font-bold hover:bg-[#017f53] transition">
-        Log Out
-      </a>
-    </div>
-  </div>
-</header>
-
+      <header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-b-[#e6f4ef] px-10 py-3">
+        <div class="flex items-center gap-4 text-[#0c1c17]">
+          <div class="size-4">
+            <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path fill-rule="evenodd" clip-rule="evenodd"
+                    d="M24 4H42V17.3333V30.6667H24V44H6V30.6667V17.3333H24V4Z"
+                    fill="currentColor"></path>
+            </svg>
+          </div>
+          <h2 class="text-[#0c1c17] text-lg font-bold tracking-tight">SplitPay</h2>
+        </div>
       
+        <div class="flex items-center gap-8">
+          <nav class="flex gap-9 text-sm font-medium text-[#0c1c17]">
+            <a href="/">Home</a>
+            <a href="/profile">Profile</a>
+            <a href="/friends">Friends</a>
+            <a href="/billing">Billing</a>
+            <a href="/my_invites">Group Invites</a>
+          </nav>
+      
+          <div class="flex items-center gap-4">
+            <!-- Bell with badge + dropdown (JS fills it) -->
+            <div class="relative" id="notif-root">
+              <button id="notif-btn" type="button"
+                      class="relative inline-flex items-center justify-center rounded-full p-2 bg-[#e6f4ef] hover:bg-[#d3ece3] transition">
+                <svg xmlns="http://www.w3.org/2000/svg" class="size-5 text-[#0c1c17]" fill="currentColor" viewBox="0 0 256 256">
+                  <path d="M221.8,175.94C216.25,166.38,208,139.33,208,104a80,80,0,1,0-160,0c0,35.34-8.26,62.38-13.81,71.94A16,16,0,0,0,48,200H88.81a40,40,0,0,0,78.38,0H208a16,16,0,0,0,13.8-24.06ZM128,216a24,24,0,0,1-22.62-16h45.24A24,24,0,0,1,128,216Z"/>
+                </svg>
+                <span id="notif-badge"
+                      class="absolute -top-1 -right-1 min-w-5 h-5 px-1.5 rounded-full bg-red-600 text-white text-[11px] font-bold leading-5 text-center hidden"></span>
+              </button>
+
+              <div id="notif-panel"
+                class="hidden absolute right-0 mt-2 w-96 rounded-xl bg-white border border-[#e6f4ef] shadow-xl overflow-hidden">
+
+                <div class="flex items-center justify-between px-4 py-3 border-b">
+                  <h4 class="text-sm font-bold text-[#0c1c17]">Notifications</h4>
+                  <button id="notif-mark-read" class="text-xs font-semibold text-[#019863] hover:opacity-80">
+                    Mark all as read
+                  </button>
+                </div>
+                <div id="notif-list" class="max-h-80 overflow-auto divide-y"></div>
+                <div class="p-3 border-t text-right">
+                  <a href="/my_invites" class="text-sm font-semibold text-[#019863] hover:opacity-80">View invites</a>
+                  <span class="mx-1 text-gray-300">•</span>
+                  <a href="/friends" class="text-sm font-semibold text-[#019863] hover:opacity-80">Friend requests</a>
+                </div>
+              </div>
+            </div>
+
+            <!-- Log Out Button -->
+            <a href="/logout" class="px-4 py-2 bg-[#019863] text-white rounded-lg text-sm font-bold hover:bg-[#017f53] transition">
+              Log Out
+            </a>
+          </div>
+        </div>
+      </header>
 
       <!-- 📄 Main Content -->
       <main class="flex flex-col md:flex-row px-10 py-8 gap-10">
@@ -82,11 +102,9 @@
           </div>
 
           <form id="manual-entry-form" class="mt-6 flex flex-col gap-3 hidden">
-            <!-- Hidden field for user's email -->
             <input type="hidden" id="user-email" value="{{ user_email }}">
             <input type="hidden" id="user-full-name" value="{{ user_full_name }}">
 
-            <!-- Group Selector -->
             <label for="group-select" class="font-semibold">Select Group (optional)</label>
             <select id="group-select" class="border rounded p-2">
               <option value="">-- None --</option>
@@ -95,15 +113,12 @@
               {% endfor %}
             </select>
 
-            <!-- Item Name -->
             <label for="manual-item-name" class="font-semibold">Item Name</label>
             <input type="text" id="manual-item-name" class="border rounded p-2" placeholder="e.g. Pizza">
 
-            <!-- Item Price -->
             <label for="manual-item-price" class="font-semibold">Item Price</label>
             <input type="number" id="manual-item-price" class="border rounded p-2" placeholder="e.g. 12.99" step="0.01" min="0">
 
-            <!-- Owner Selector -->
             <label for="manual-owners" class="font-semibold">Select Owners</label>
             <select id="manual-owners" class="border rounded p-2" multiple>
               <option value="{{ user_email }}">{{ user_full_name }}</option>
@@ -112,19 +127,15 @@
               {% endfor %}
             </select>
 
-            <!-- Add Item Button -->
             <button type="button" id="add-manual-item" class="bg-[#019863] text-white px-4 py-2 rounded-lg font-bold w-fit">Add Item</button>
 
-            <!-- Manual Items List -->
             <ul id="manual-items-list" class="space-y-2 pt-2"></ul>
 
-            <!-- Final Submit -->
             <button type="button" id="submit-manual-items" class="bg-[#019863] text-white px-4 py-2 rounded-lg font-bold w-fit">Calculate Split</button>
           </form>
 
           <!-- 📤 Receipt Upload Form -->
           <form id="photo-form" enctype="multipart/form-data" class="mt-6 flex flex-col gap-3">
-            <!-- Group Selector -->
             <label for="upload-group-select" class="font-semibold">Select Group (optional)</label>
             <select id="upload-group-select" class="border rounded p-2">
               <option value="">-- No Group --</option>
@@ -133,17 +144,14 @@
               {% endfor %}
             </select>
 
-            <!-- File Input -->
             <label class="font-semibold">Upload Receipt Image</label>
             <input type="file" id="receipt-upload" name="receipt" accept="image/*" class="file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#e6f4ef] file:text-[#0c1c17] hover:file:bg-[#d3ece3]" />
 
             <button type="submit" class="bg-[#019863] text-white px-4 py-2 rounded-lg font-bold max-w-[200px]">Upload</button>
           </form>
 
-          <!-- 🔽 Dynamic Results Appear Here -->
           <div id="results" class="mt-6 space-y-4"></div>
 
-          <!-- ✅ Receipt Owner Assignment UI -->
           <div id="receipt-item-entry" class="mt-6 flex flex-col gap-4 hidden">
             <h3 class="text-xl font-bold">Assign Owners</h3>
             <p class="text-sm text-gray-600">Select who shared each item. Tax will be split among selected item owners automatically.</p>
@@ -158,7 +166,6 @@
         </section>
 
         <!-- 📌 Sidebar -->
-         
         <aside class="w-full md:w-80 space-y-6">
           <div class="bg-white rounded-lg p-4 shadow-sm border">
             <h3 class="font-bold text-lg mb-2">Your Groups</h3>
@@ -172,20 +179,19 @@
                 </li>
               {% endfor %}
             </ul>
-            
             <div id="group-panel" class="mt-4 hidden text-sm text-[#0c1c17]"></div>
             <button id="create-group-btn" class="mt-3 text-[#019863] font-semibold">+ Create New Group</button>
-
-
           </div>
 
           <div class="bg-white rounded-lg p-4 shadow-sm border">
             <h3 class="font-bold text-lg mb-2">Transaction History</h3>
             <ul id="transaction-history" class="text-sm space-y-1">
               {% for txn in transactions %}
-                <li>
-                  You were paid ${{ "%.2f"|format(txn.amount) }} on {{ txn.date }}
-                </li>
+              <li>
+                You were paid ${{ "%.2f"|format(txn.amount) }} on
+                <time class="transaction-time" datetime="{{ txn.date }}Z">{{ txn.date }}Z</time>
+              </li>
+              
               {% else %}
                 <li id="no-transactions">No transactions yet</li>
               {% endfor %}
@@ -199,7 +205,3 @@
     <script src="{{ url_for('static', filename='script.js') }}"></script>
   </body>
 </html>
-
-
-
-

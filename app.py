@@ -3,52 +3,214 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_wtf.csrf import CSRFProtect
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from dotenv import load_dotenv
 from openai import OpenAI
-import stripe, os, re, base64, json
-
+import stripe, os, re, base64, json, smtplib
+from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
+from email.message import EmailMessage
+from sqlalchemy import and_
 from models import db, User, FriendRequest, Transaction, Group, GroupMember, GroupInvite
+from flask_migrate import Migrate
 
+
+
+# Load environment variables
 load_dotenv(os.getenv("ENV_FILE") or None, override=True)
 
+# Keys and Configs
 OPENAI_API_KEY       = (os.getenv("OPENAI_API_KEY") or "").strip()
 STRIPE_SECRET_KEY    = os.getenv("STRIPE_SECRET_KEY")
-STRIPE_PUBLISHABLE   = os.getenv("STRIPE_PUBLISHABLE_KEY")  # (used client-side if needed)
+STRIPE_PUBLISHABLE   = os.getenv("STRIPE_PUBLISHABLE_KEY")
 endpoint_secret      = os.getenv("STRIPE_WEBHOOK_SECRET")
 SECRET_KEY           = os.getenv("SECRET_KEY") or "dev-only-change-me"
 DATABASE_URL         = os.getenv("SQLALCHEMY_DATABASE_URI") or "sqlite:///splitpay.db"
 
+MAIL_SERVER         = os.getenv("MAIL_SERVER", "smtp.gmail.com")
+MAIL_PORT           = int(os.getenv("MAIL_PORT") or 587)
+MAIL_USE_TLS        = os.getenv("MAIL_USE_TLS", "True").strip().lower() == "true"
+MAIL_USERNAME       = os.getenv("MAIL_USERNAME")
+MAIL_PASSWORD       = os.getenv("MAIL_PASSWORD")
+MAIL_DEFAULT_SENDER = os.getenv("MAIL_DEFAULT_SENDER") or MAIL_USERNAME
+
+# Init APIs
 client = OpenAI(api_key=OPENAI_API_KEY)
 stripe.api_key = STRIPE_SECRET_KEY
 
+# Init Flask
 app = Flask(__name__)
-app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)  # trust Render's proxy
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
 app.config.update(
     SQLALCHEMY_DATABASE_URI=DATABASE_URL,
     SQLALCHEMY_TRACK_MODIFICATIONS=False,
     SECRET_KEY=SECRET_KEY,
     UPLOAD_FOLDER="static/profile_pics"
 )
-csrf = CSRFProtect(app)
 
-# --- DB bootstrap (ok for now; later consider Alembic) ---
+csrf = CSRFProtect(app)
 db.init_app(app)
+migrate = Migrate(app, db)  
 with app.app_context():
     db.create_all()
 
+migrate = Migrate(app, db)
+
+# Allowed file extensions
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif"}
-def allowed_file(fn): return "." in fn and fn.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+def allowed_file(fn):
+    return "." in fn and fn.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
+# Sessions
+app.permanent_session_lifetime = timedelta(days=30)
+
+# Token serializer for password reset
+ts = URLSafeTimedSerializer(app.config["SECRET_KEY"])
+
+# Email sending function
+def send_email(to_email: str, subject: str, html: str):
+    """
+    Sends an HTML email using SMTP with Gmail.
+    Falls back to console logging if credentials are missing.
+    """
+
+    # Check that we have credentials before trying to send
+    if not (MAIL_USERNAME and MAIL_PASSWORD):
+        print("\n=== EMAIL (dev fallback) ===")
+        print("To:", to_email)
+        print("Subject:", subject)
+        print("HTML:\n", html)
+        print("===========================\n")
+        return
+
+    try:
+        # Create email message object
+        msg = EmailMessage()
+        msg["From"] = MAIL_DEFAULT_SENDER or MAIL_USERNAME
+        msg["To"] = to_email
+        msg["Subject"] = subject
+        msg.set_content("Your email client does not support HTML.")
+        msg.add_alternative(html, subtype="html")  # HTML version
+
+        # Connect to SMTP server
+        with smtplib.SMTP(MAIL_SERVER, MAIL_PORT) as smtp:
+            if MAIL_USE_TLS:
+                smtp.starttls()
+            smtp.login(MAIL_USERNAME, MAIL_PASSWORD)
+            smtp.send_message(msg)
+
+        print(f"Email sent successfully to {to_email}")
+
+    except Exception as e:
+        # Don’t crash the app if email fails
+        print("Email send failed:", repr(e))
+        print("\n=== EMAIL (fallback after failure) ===")
+        print("To:", to_email)
+        print("Subject:", subject)
+        print("HTML:\n", html)
+        print("======================================\n")
+
+
+# Forgot password route
+# Forgot password
+@csrf.exempt
+@app.route("/forgot-password", methods=["GET", "POST"])
+def forgot():
+    if request.method == "POST":
+        email = request.form.get("email")
+        user = User.query.filter_by(email=email).first()
+        if user:
+            token = ts.dumps(user.email, salt="password-reset-salt")
+            reset_url = url_for("reset_password", token=token, _external=True)
+
+            html = f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8" />
+                <style>
+                body {{
+                    font-family: Arial, sans-serif;
+                    background-color: #f9f9f9;
+                    margin: 0;
+                    padding: 0;
+                }}
+                .container {{
+                    max-width: 500px;
+                    background: #fff;
+                    padding: 20px;
+                    margin: 40px auto;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                }}
+                h2 {{ color: #333; }}
+                p  {{ color: #555; }}
+                a.button {{
+                    display: inline-block;
+                    background: #019863;
+                    color: #fff;
+                    padding: 12px 20px;
+                    text-decoration: none;
+                    border-radius: 6px;
+                    margin-top: 16px;
+                }}
+                a.button:hover {{ background: #017f53; }}
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                <h2>Password Reset Request</h2>
+                <p>We received a request to reset your password for your SplitPay account.</p>
+                <p>Click the button below to choose a new password. This link is valid for <strong>1 hour</strong>.</p>
+                <p><a class="button" href="{reset_url}">Reset Password</a></p>
+                <p>If you didn’t request this, you can safely ignore this email.</p>
+                </div>
+            </body>
+            </html>
+            """
+
+
+            send_email(user.email, "SplitPay Password Reset", html)
+
+            send_email(user.email, "SplitPay Password Reset", html)
+
+        # use your existing template name
+        return render_template("forgot_password_sent.html")
+
+    # use your existing template name
+    return render_template("forgot_password.html")
+
+
+@csrf.exempt
+@app.route("/reset/<token>", methods=["GET", "POST"])
+def reset_password(token):
+    try:
+        email = ts.loads(token, salt="password-reset-salt", max_age=3600)
+    except SignatureExpired:
+        return "The token has expired", 400
+    except BadSignature:
+        return "Invalid token", 400
+
+    if request.method == "POST":
+        password = request.form.get("password")
+        hashed_pw = generate_password_hash(password)
+        user = User.query.filter_by(email=email).first()
+        if user:
+            user.password = hashed_pw
+            db.session.commit()
+            return redirect(url_for("login"))
+
+    # use your existing template name
+    return render_template("reset_password.html", token=token)
+
+
 
 
 @csrf.exempt
 @app.route("/")
 def home():
     if "user_id" not in session:
-        # public landing page
         return render_template("landing.html")
 
-    # logged-in dashboard (what you currently call index.html)
     user = User.query.get(session["user_id"])
     transactions = (
         Transaction.query
@@ -68,9 +230,7 @@ def home():
 
 @app.route("/pricing")
 def pricing():
-    # Optional: pass tiers if you want to render from data later
     return render_template("pricing.html")
-
 
 
 @csrf.exempt
@@ -110,26 +270,31 @@ def signup():
     return render_template("signup.html")
 
 
+
 @csrf.exempt
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        email = request.form['email']
+        email = request.form['email'].strip()
         password = request.form['password']
-        user = User.query.filter_by(email=email).first()
+        remember = bool(request.form.get('remember'))
 
+        user = User.query.filter_by(email=email).first()
         if user and check_password_hash(user.password, password):
+            session.permanent = remember  # <-- key line
             session['user_id'] = user.id
             return redirect(url_for('home'))
-        return 'Invalid email or password'
+
+        return render_template('login.html', error="Invalid email or password")
 
     return render_template('login.html')
+
+
 
 @app.route('/logout')
 def logout():
     session.pop('user_id', None)
     return redirect(url_for('home'))
-
 
 
 
@@ -188,7 +353,156 @@ def accept_request(request_id):
 
 
 
+# === Notifications helpers ===
+def notification_count_for(user_id: int) -> int:
+    if not user_id:
+        return 0
+    fr_count = FriendRequest.query.filter_by(to_user_id=user_id, status='pending').count()
+    gi_count = GroupInvite.query.filter_by(to_user_id=user_id, status='pending').count()
+    return (fr_count or 0) + (gi_count or 0)
 
+# Make notif_count available to every Jinja template render
+@app.context_processor
+def inject_notif_count():
+    uid = session.get('user_id')
+    return {'notif_count': notification_count_for(uid)}
+
+
+
+
+# === Notifications helpers (drop-in replacements) ===
+def _avatar_url(filename: str | None) -> str:
+    if filename:
+        return url_for('static', filename=f'profile_pics/{filename}')
+    return url_for('static', filename='profile_pics/default.png')
+
+def _pending_notifications(user_id: int) -> list[dict]:
+    """Return a list of normalized notification dicts the JS expects."""
+    if not user_id:
+        return []
+
+    items: list[dict] = []
+
+    # Friend requests -> type: 'friend_request'
+    frs = (
+        db.session.query(FriendRequest, User)
+        .join(User, User.id == FriendRequest.from_user_id)
+        .filter(and_(
+            FriendRequest.to_user_id == user_id,
+            FriendRequest.status == 'pending'
+        ))
+        .order_by(FriendRequest.id.desc())
+        .all()
+    )
+    for fr, sender in frs:
+        created = getattr(fr, "created_at", None)
+        items.append({
+            "id": fr.id,                         # numeric, matches /accept_request/<id>
+            "type": "friend_request",
+            "sender_name": sender.full_name or sender.username,
+            "sender_pic": _avatar_url(sender.profile_pic),
+            "created_at": (created.isoformat() if created else datetime.utcnow().isoformat()),
+            "href": url_for('friends'),
+        })
+
+    # Group invites -> type: 'group_invite'
+    gis = (
+        db.session.query(GroupInvite, Group, User)
+        .join(Group, Group.id == GroupInvite.group_id)
+        .join(User, User.id == GroupInvite.from_user_id)
+        .filter(and_(
+            GroupInvite.to_user_id == user_id,
+            GroupInvite.status == 'pending'
+        ))
+        .order_by(GroupInvite.id.desc())
+        .all()
+    )
+    for gi, group, inviter in gis:
+        created = getattr(gi, "created_at", None)
+        items.append({
+            "invite_id": gi.id,                  # what script.js sends to accept/decline
+            "type": "group_invite",
+            "group_name": group.name,
+            "inviter_name": inviter.full_name or inviter.username,
+            "inviter_pic": _avatar_url(inviter.profile_pic),
+            "created_at": (created.isoformat() if created else datetime.utcnow().isoformat()),
+            "href": url_for('my_invites'),
+        })
+
+    # newest first
+    items.sort(key=lambda x: x["created_at"], reverse=True)
+    return items
+
+@csrf.exempt
+@app.route('/notifications/count')
+def notifications_count():
+    """Lightweight count for the red badge."""
+    if 'user_id' not in session:
+        return jsonify({"count": 0})
+    # Count pending items from both sources
+    fr_count = FriendRequest.query.filter_by(
+        to_user_id=session['user_id'], status='pending'
+    ).count()
+    gi_count = GroupInvite.query.filter_by(
+        to_user_id=session['user_id'], status='pending'
+    ).count()
+    return jsonify({"count": (fr_count or 0) + (gi_count or 0)})
+
+@csrf.exempt
+@app.route('/notifications/list')
+def notifications_list():
+    """Full list so the dropdown can render details + buttons."""
+    if 'user_id' not in session:
+        return jsonify([]), 401
+
+    items = _pending_notifications(session['user_id'])
+
+    # add unread flag using a simple session timestamp
+    seen_iso = session.get('_notif_seen_at')
+    if seen_iso:
+        try:
+            seen = datetime.fromisoformat(seen_iso)
+            for it in items:
+                it['unread'] = datetime.fromisoformat(it["created_at"]) > seen
+        except Exception:
+            for it in items:
+                it['unread'] = True
+    else:
+        for it in items:
+            it['unread'] = True
+
+    return jsonify(items), 200
+
+# Support BOTH dash and underscore for mark-read, to be safe.
+@csrf.exempt
+@app.route('/notifications/mark-read', methods=['POST'])
+@app.route('/notifications/mark_read', methods=['POST'])
+def notifications_mark_read():
+    if 'user_id' not in session:
+        return jsonify({"ok": False}), 401
+    session['_notif_seen_at'] = datetime.utcnow().isoformat()
+    return jsonify({"ok": True})
+
+
+
+
+
+
+
+
+
+
+@csrf.exempt
+@app.route('/friend_request/accept/<int:request_id>', methods=['POST'])
+def accept_friend_request(request_id):
+    # Accept logic
+    return jsonify({"ok": True})
+
+@csrf.exempt
+@app.route('/friend_request/decline/<int:request_id>', methods=['POST'])
+def decline_friend_request(request_id):
+    # Decline logic
+    return jsonify({"ok": True})
 
 
 
@@ -970,7 +1284,6 @@ def upload_receipt():
 
 
 
-
-
 if __name__ == "__main__":
     app.run(debug=False)
+

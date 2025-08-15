@@ -19,12 +19,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const userEmail = document.getElementById("user-email")?.value || "";
   const userFullName = document.getElementById("user-full-name")?.value || "";
 
+  // ---- Manual entry running total ----
   const manualItems = [];
   const runningTotal = document.createElement("p");
   runningTotal.className = "font-semibold text-right text-[#019863] pt-2";
   if (manualItemsList) manualItemsList.insertAdjacentElement("afterend", runningTotal);
 
-  // Toggle Receipt vs Manual
+  // ---- Toggle Receipt vs Manual ----
   receiptBtn?.addEventListener("click", () => {
     uploadForm?.classList.remove("hidden");
     manualForm?.classList.add("hidden");
@@ -39,7 +40,7 @@ document.addEventListener("DOMContentLoaded", () => {
     receiptBtn?.classList.remove("bg-[#019863]", "text-white");
   });
 
-  // Group -> owners (manual entry)
+  // ---- Group -> owners (manual entry) ----
   groupSelect?.addEventListener("change", async (e) => {
     const groupId = e.target.value;
     if (!groupId) return resetOwnersDropdown();
@@ -47,7 +48,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const res = await fetch(`/get_group_members/${groupId}`);
       const data = await res.json();
       ownerSelect.innerHTML = "";
-      data.forEach(member => {
+      data.forEach((member) => {
         const opt = document.createElement("option");
         opt.value = member.email;
         opt.textContent = member.full_name;
@@ -58,14 +59,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Manual add item
+  // ---- Manual: add item ----
   addItemBtn?.addEventListener("click", () => {
     const name = itemNameInput.value.trim();
     const price = parseFloat(itemPriceInput.value);
-
-    const owners = Array.from(ownerSelect.selectedOptions).map(o => ({
+    const owners = Array.from(ownerSelect.selectedOptions).map((o) => ({
       email: o.value,
-      name: o.textContent
+      name: o.textContent,
     }));
 
     if (!name || isNaN(price) || price <= 0 || owners.length === 0) {
@@ -77,7 +77,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const li = document.createElement("li");
     li.className = "flex justify-between items-center bg-white p-2 rounded border text-sm";
-    li.innerHTML = `<span><strong>${name}</strong> - $${price.toFixed(2)}</span><span>${owners.map(o => o.name).join(", ")}</span>`;
+    li.innerHTML = `<span><strong>${name}</strong> - $${price.toFixed(2)}</span><span>${owners.map((o) => o.name).join(", ")}</span>`;
     manualItemsList.appendChild(li);
 
     itemNameInput.value = "";
@@ -86,31 +86,31 @@ document.addEventListener("DOMContentLoaded", () => {
     updateRunningTotal();
   });
 
-  // Manual calculate
+  // ---- Manual: calculate split ----
   submitManualBtn?.addEventListener("click", async () => {
     if (manualItems.length === 0) return alert("Please add at least one item.");
 
     const payload = {
       paid_by: userEmail,
-      items: manualItems.map(item => ({
+      items: manualItems.map((item) => ({
         name: item.name,
         price: item.price,
-        owners: item.owners.map(o => o.email)
-      }))
+        owners: item.owners.map((o) => o.email),
+      })),
     };
 
     try {
       const res = await fetch("/calculate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (data.error) {
         resultsDiv.innerHTML = `<p class="text-red-600 font-semibold">Error: ${data.error}</p>`;
       } else {
         const emailToName = { [userEmail]: userFullName };
-        manualItems.forEach(item => item.owners.forEach(o => (emailToName[o.email] = o.name)));
+        manualItems.forEach((item) => item.owners.forEach((o) => (emailToName[o.email] = o.name)));
         renderResults(data.reimbursements, userEmail, userFullName, emailToName);
       }
     } catch (err) {
@@ -119,7 +119,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Receipt upload flow
+  // ---- Receipt upload flow ----
   uploadForm?.addEventListener("submit", async (e) => {
     e.preventDefault();
     const file = document.getElementById("receipt-upload").files[0];
@@ -140,27 +140,27 @@ document.addEventListener("DOMContentLoaded", () => {
       receiptItemsList.innerHTML = "";
       resultsDiv.innerHTML = `<p class="font-bold text-right pt-4">Total: $${Number(total_amount).toFixed(2)}</p>`;
 
-      // Populate payor dropdown
+      // Payor dropdown
       paidBySelect.innerHTML = "";
       const emailToName = {};
       emailToName[user.email] = user.full_name;
-      friends.forEach(f => (emailToName[f.email] = f.full_name));
-      [user, ...friends].forEach(person => {
+      friends.forEach((f) => (emailToName[f.email] = f.full_name));
+      [user, ...friends].forEach((person) => {
         const opt = document.createElement("option");
         opt.value = person.email;
         opt.textContent = person.full_name;
         paidBySelect.appendChild(opt);
       });
 
-      // Build per-item owner multiselects
-      items.forEach(item => {
+      // Per-item owner multiselects
+      items.forEach((item) => {
         const itemLi = document.createElement("li");
         itemLi.className = "border rounded p-3";
         itemLi.innerHTML = `<p class="font-semibold">${item.name} - $${Number(item.price).toFixed(2)}</p>`;
         const select = document.createElement("select");
         select.multiple = true;
         select.className = "mt-2 border rounded w-full p-2";
-        [user, ...friends].forEach(person => {
+        [user, ...friends].forEach((person) => {
           const opt = document.createElement("option");
           opt.value = person.email;
           opt.textContent = person.full_name;
@@ -170,10 +170,10 @@ document.addEventListener("DOMContentLoaded", () => {
         receiptItemsList.appendChild(itemLi);
       });
 
-      // Split button
+      // Split button behavior
       splitItemsBtn.onclick = async () => {
         const builtItems = [];
-        receiptItemsList.querySelectorAll("li").forEach(li => {
+        receiptItemsList.querySelectorAll("li").forEach((li) => {
           const label = li.querySelector("p")?.innerText || "";
           const match = label.match(/^(.*?) - \$(\d+(\.\d{2})?)/);
           if (!match) return;
@@ -181,9 +181,9 @@ document.addEventListener("DOMContentLoaded", () => {
           const name = match[1].trim();
           const price = parseFloat(match[2]);
           const select = li.querySelector("select");
-          const owners = Array.from(select.selectedOptions).map(o => ({
+          const owners = Array.from(select.selectedOptions).map((o) => ({
             email: o.value,
-            name: o.textContent
+            name: o.textContent,
           }));
 
           if (owners.length > 0) builtItems.push({ name, price, owners });
@@ -193,25 +193,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const paidBy = paidBySelect.value;
 
-        // Build name lookup for pretty output
+        // Name lookup for pretty output
         const nameLookup = {};
-        document.querySelectorAll("#receipt-paid-by option").forEach(opt => (nameLookup[opt.value] = opt.textContent));
+        document.querySelectorAll("#receipt-paid-by option").forEach((opt) => (nameLookup[opt.value] = opt.textContent));
 
-        // Payload now uses the receipt 'builtItems' + the selected paidBy
         const payload = {
           paid_by: paidBy,
-          items: builtItems.map(item => ({
+          items: builtItems.map((item) => ({
             name: item.name,
             price: item.price,
-            owners: item.owners.map(o => o.email)
-          }))
+            owners: item.owners.map((o) => o.email),
+          })),
         };
 
         try {
           const res = await fetch("/calculate", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
+            body: JSON.stringify(payload),
           });
           const data = await res.json();
           if (data.error) {
@@ -271,17 +270,17 @@ document.addEventListener("DOMContentLoaded", () => {
     ownerSelect.appendChild(userOption);
   }
 
-  // Clean up any numeric-only options accidentally present
-  Array.from(ownerSelect?.options || []).forEach(opt => {
+  // Clean any numeric-only options accidentally present
+  Array.from(ownerSelect?.options || []).forEach((opt) => {
     if (!isNaN(opt.textContent)) opt.remove();
   });
 
-  // Sidebar groups
-  document.querySelectorAll(".group-btn").forEach(li => {
+  // ---- Sidebar groups ----
+  document.querySelectorAll(".group-btn").forEach((li) => {
     attachGroupClickListener(li);
   });
 
-  // Create group
+  // ---- Create group ----
   document.getElementById("create-group-btn")?.addEventListener("click", async () => {
     const groupName = prompt("Enter group name:");
     if (!groupName) return;
@@ -290,7 +289,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const res = await fetch("/create_group", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: groupName })
+        body: JSON.stringify({ name: groupName }),
       });
       const data = await res.json();
 
@@ -311,9 +310,233 @@ document.addEventListener("DOMContentLoaded", () => {
       alert("Failed to create group.");
     }
   });
-});
 
-// Attach listener for a sidebar group item
+  // ===========================
+  //   Notifications dropdown
+  // ===========================
+  (() => {
+    const btn = document.getElementById("notif-btn");
+    const panel = document.getElementById("notif-panel");
+    const listEl = document.getElementById("notif-list");
+    const badge = document.getElementById("notif-badge");
+    const markRead = document.getElementById("notif-mark-read");
+
+    if (!btn || !panel || !listEl || !badge || !markRead) return;
+
+    const fmtAgo = (iso) => {
+      try {
+        const d = new Date(iso);
+        const s = Math.max(1, Math.floor((Date.now() - d.getTime()) / 1000));
+        if (s < 60) return `${s}s ago`;
+        const m = Math.floor(s / 60);
+        if (m < 60) return `${m}m ago`;
+        const h = Math.floor(m / 60);
+        if (h < 24) return `${h}h ago`;
+        const dd = Math.floor(h / 24);
+        return `${dd}d ago`;
+      } catch {
+        return "";
+      }
+    };
+
+    const svgCheck = `
+      <svg class="w-4 h-4 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+      </svg>`;
+    const svgX = `
+      <svg class="w-4 h-4 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+      </svg>`;
+
+    const defaultPic = "/static/profile_pics/default.png";
+    const avatar = (src) =>
+      `<img src="${src && src.trim() ? src : defaultPic}" class="w-6 h-6 rounded-full object-cover" alt="user">`;
+
+    const setBadge = (n) => {
+      if (!n || n <= 0) {
+        badge.classList.add("hidden");
+        badge.textContent = "";
+      } else {
+        badge.classList.remove("hidden");
+        badge.textContent = n > 99 ? "99+" : String(n);
+      }
+    };
+
+    async function refreshCount() {
+      try {
+        const r = await fetch("/notifications/count");
+        if (!r.ok) throw 0;
+        const { count } = await r.json();
+        setBadge(count || 0);
+      } catch {
+        setBadge(0);
+      }
+    }
+
+    function renderItem(it) {
+      if (it.type === "friend_request") {
+        return `
+          <div class="notif-item flex items-center justify-between px-4 py-2" data-kind="friend" data-id="${it.id}">
+            <div class="flex items-center gap-2 min-w-0">
+              ${avatar(it.sender_pic)}
+              <div class="min-w-0">
+                <p class="text-sm text-[#0c1c17] truncate"><span class="font-medium">${it.sender_name || "Someone"}</span> sent you a friend request</p>
+                <p class="text-[11px] text-gray-500">${fmtAgo(it.created_at)}</p>
+              </div>
+            </div>
+            <div class="flex gap-1 shrink-0">
+              <button class="act-accept p-1 rounded bg-green-100 hover:bg-green-200" title="Accept">${svgCheck}</button>
+              <button class="act-decline p-1 rounded bg-red-100 hover:bg-red-200" title="Decline">${svgX}</button>
+            </div>
+          </div>`;
+      }
+      if (it.type === "group_invite") {
+        return `
+          <div class="notif-item flex items-center justify-between px-4 py-2" data-kind="ginvite" data-id="${it.invite_id}">
+            <div class="flex items-center gap-2 min-w-0">
+              ${avatar(it.inviter_pic)}
+              <div class="min-w-0">
+                <p class="text-sm text-[#0c1c17] truncate"><span class="font-medium">${it.inviter_name || "Someone"}</span> invited you to <span class="font-medium">${it.group_name || "a group"}</span></p>
+                <p class="text-[11px] text-gray-500">${fmtAgo(it.created_at)}</p>
+              </div>
+            </div>
+            <div class="flex gap-1 shrink-0">
+              <button class="act-accept p-1 rounded bg-green-100 hover:bg-green-200" title="Accept">${svgCheck}</button>
+              <button class="act-decline p-1 rounded bg-red-100 hover:bg-red-200" title="Decline">${svgX}</button>
+            </div>
+          </div>`;
+      }
+      return `
+        <div class="px-4 py-3">
+          <p class="text-sm text-[#0c1c17]">New notification</p>
+          ${it.created_at ? `<p class="text-[11px] text-gray-500">${fmtAgo(it.created_at)}</p>` : ""}
+        </div>`;
+    }
+
+    async function loadList() {
+      listEl.innerHTML = `<div class="px-4 py-6 text-sm text-gray-500">Loading…</div>`;
+      try {
+        const r = await fetch("/notifications/list");
+        if (!r.ok) throw 0;
+        const items = await r.json();
+        if (!Array.isArray(items) || items.length === 0) {
+          listEl.innerHTML = `<div class="px-4 py-6 text-sm text-gray-500">No new notifications</div>`;
+          return;
+        }
+        listEl.innerHTML = items.map(renderItem).join("");
+      } catch {
+        listEl.innerHTML = `<div class="px-4 py-6 text-sm text-red-600">Failed to load notifications.</div>`;
+      }
+    }
+
+    async function post(url, body, { asJson = false, asForm = false } = {}) {
+      const init = { method: "POST" };
+      if (asJson) {
+        init.headers = { "Content-Type": "application/json" };
+        init.body = JSON.stringify(body || {});
+      } else if (asForm) {
+        const fd = new URLSearchParams();
+        for (const k in (body || {})) fd.append(k, body[k]);
+        init.headers = { "Content-Type": "application/x-www-form-urlencoded" };
+        init.body = fd.toString();
+      }
+      const r = await fetch(url, init);
+      return r.ok;
+    }
+
+    listEl.addEventListener("click", async (e) => {
+      const item = e.target.closest(".notif-item");
+      if (!item) return;
+
+      const kind = item.getAttribute("data-kind");
+      const id = item.getAttribute("data-id");
+      const isAccept = !!e.target.closest(".act-accept");
+      const isDecline = !!e.target.closest(".act-decline");
+
+      if (kind === "friend") {
+        if (isAccept) {
+          const ok = await post(`/accept_request/${id}`, null);
+          if (ok) {
+            item.remove();
+            refreshCount();
+          }
+        } else if (isDecline) {
+          window.location.href = "/friends";
+        }
+        return;
+      }
+
+      if (kind === "ginvite") {
+        if (isAccept) {
+          const ok = await post("/accept_group_invite", { invite_id: id }, { asJson: true });
+          if (ok) {
+            item.remove();
+            refreshCount();
+          }
+        } else if (isDecline) {
+          const ok = await post("/decline_invite", { invite_id: id }, { asForm: true });
+          if (ok) {
+            item.remove();
+            refreshCount();
+          }
+        }
+      }
+    });
+
+    markRead.addEventListener("click", async () => {
+      try {
+        await fetch("/notifications/mark-read", { method: "POST" });
+        panel.classList.add("hidden");
+        refreshCount();
+      } catch {}
+    });
+
+    btn.addEventListener("click", async () => {
+      const opening = panel.classList.contains("hidden");
+      document.querySelectorAll("#notif-panel").forEach((p) => p !== panel && p.classList.add("hidden"));
+      panel.classList.toggle("hidden");
+      if (opening) await loadList();
+    });
+
+    document.addEventListener("click", (e) => {
+      if (!panel.contains(e.target) && e.target !== btn && !btn.contains(e.target)) {
+        panel.classList.add("hidden");
+      }
+    });
+
+    refreshCount();
+    setInterval(refreshCount, 30000);
+  })();
+
+  // ===========================
+  //   Transaction time → local
+  // ===========================
+  (function formatTransactionTimes() {
+    const fmtOptions = {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    };
+    document.querySelectorAll(".transaction-time").forEach((el) => {
+      let iso = el.getAttribute("datetime") || el.textContent || "";
+      iso = iso.trim();
+      if (iso && !/[zZ]|[+\-]\d{2}:?\d{2}$/.test(iso)) {
+        iso += "Z"; // treat as UTC if no tz info
+      }
+      const d = new Date(iso);
+      if (!isNaN(d.getTime())) {
+        el.textContent = d.toLocaleString(undefined, fmtOptions);
+      }
+    });
+  })();
+}); // END DOMContentLoaded
+
+// ===========================
+//   Sidebar group helpers
+// ===========================
 function attachGroupClickListener(li) {
   li.addEventListener("click", async () => {
     const groupId = li.dataset.groupId;
@@ -326,7 +549,7 @@ function attachGroupClickListener(li) {
       panel.innerHTML = `
         <h3 class="text-lg font-bold mb-2">${data.name}</h3>
         <ul class="mb-4 space-y-1">
-          ${data.members.map(m => `<li class="text-sm">${m.full_name}</li>`).join("")}
+          ${data.members.map((m) => `<li class="text-sm">${m.full_name}</li>`).join("")}
         </ul>
         <div class="flex gap-2">
           <button id="invite-btn" class="bg-[#019863] text-white px-3 py-1 rounded text-sm">Invite Someone</button>
@@ -335,38 +558,36 @@ function attachGroupClickListener(li) {
       `;
       panel.classList.remove("hidden");
 
-      // Invite flow — matches Flask: { group: <name>, invitee: <username> }
       document.getElementById("invite-btn").addEventListener("click", () => {
         const invitee = prompt("Enter the username to invite:");
         if (!invitee) return;
         fetch("/invite_to_group", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ group: data.name, invitee })
+          body: JSON.stringify({ group: data.name, invitee }),
         })
-          .then(r => r.json())
-          .then(d => alert(d.message || "Invite sent!"))
-          .catch(err => {
+          .then((r) => r.json())
+          .then((d) => alert(d.message || "Invite sent!"))
+          .catch((err) => {
             console.error("Error sending invite:", err);
             alert("Failed to send invite.");
           });
       });
 
-      // Leave group
       document.getElementById("leave-group-btn").addEventListener("click", () => {
         if (!confirm("Are you sure you want to leave this group?")) return;
         fetch("/leave_group", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ group_id: groupId })
+          body: JSON.stringify({ group_id: groupId }),
         })
-          .then(r => r.json())
-          .then(d => {
+          .then((r) => r.json())
+          .then((d) => {
             alert(d.message || "Left group.");
             panel.classList.add("hidden");
             li.remove();
           })
-          .catch(err => {
+          .catch((err) => {
             console.error("Error leaving group:", err);
             alert("Failed to leave group.");
           });
@@ -377,12 +598,12 @@ function attachGroupClickListener(li) {
   });
 }
 
-/* ---------- Toast + helpers used by billing ---------- */
-
-// Toast notification helper
+// ===========================
+//   Toast + billing helpers
+// ===========================
 const toast = (msg, type = "info") => {
   const root = document.getElementById("toast-root");
-  if (!root) return alert(msg); // fallback if container missing
+  if (!root) return alert(msg);
   const el = document.createElement("div");
   el.className =
     "rounded-lg px-4 py-3 shadow border text-sm transition-all duration-300 " +
@@ -393,19 +614,23 @@ const toast = (msg, type = "info") => {
       : "bg-white border-gray-200 text-gray-800");
   el.textContent = msg;
   root.appendChild(el);
-  setTimeout(() => { el.style.opacity = "0"; el.style.transform = "translateY(-6px)"; }, 2800);
+  setTimeout(() => {
+    el.style.opacity = "0";
+    el.style.transform = "translateY(-6px)";
+  }, 2800);
   setTimeout(() => el.remove(), 3400);
 };
 
-// POST JSON helper
 const postJSON = async (url, body) => {
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body || {})
+    body: JSON.stringify(body || {}),
   });
   let data = null;
-  try { data = await res.json(); } catch (_) {}
+  try {
+    data = await res.json();
+  } catch (_) {}
   if (!res.ok) {
     const msg = (data && (data.error || data.message)) || `Request failed (${res.status})`;
     throw new Error(msg);
@@ -413,7 +638,6 @@ const postJSON = async (url, body) => {
   return data;
 };
 
-// Billing plan selection (works anywhere the buttons exist)
 document.querySelectorAll(".select-plan").forEach((btn) => {
   btn.addEventListener("click", async () => {
     const plan = btn.dataset.plan; // 'free' | 'pro' | 'pro_plus'
@@ -433,7 +657,7 @@ document.querySelectorAll(".select-plan").forEach((btn) => {
 
       const data = await postJSON("/create-checkout-session", { plan });
       if (data.url) {
-        window.location = data.url; // Stripe Checkout
+        window.location = data.url;
       } else {
         throw new Error("No checkout URL returned.");
       }

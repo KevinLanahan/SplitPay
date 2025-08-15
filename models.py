@@ -1,7 +1,10 @@
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import Enum
 from datetime import datetime, timezone
+from itsdangerous import URLSafeTimedSerializer
+
 db = SQLAlchemy()
+
 
 # Association table for friendships (many-to-many)
 friendships = db.Table('friendships',
@@ -20,6 +23,8 @@ class User(db.Model):
     scan_count = db.Column(db.Integer, default=0)
     scan_reset_date = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     stripe_customer_id = db.Column(db.String, nullable=True)
+    reset_token = db.Column(db.String(100), nullable=True)
+    reset_token_expires = db.Column(db.DateTime, nullable=True)
     friends = db.relationship(
         'User',
         secondary=friendships,
