@@ -356,16 +356,12 @@ def notification_count_for(user_id: int) -> int:
     gi_count = GroupInvite.query.filter_by(to_user_id=user_id, status='pending').count()
     return (fr_count or 0) + (gi_count or 0)
 
-# Make notif_count available to every Jinja template render
 @app.context_processor
 def inject_notif_count():
     uid = session.get('user_id')
     return {'notif_count': notification_count_for(uid)}
 
 
-
-
-# === Notifications helpers (drop-in replacements) ===
 def _avatar_url(filename: str | None) -> str:
     if filename:
         return url_for('static', filename=f'profile_pics/{filename}')
@@ -468,19 +464,14 @@ def notifications_list():
 
     return jsonify(items), 200
 
-# Support BOTH dash and underscore for mark-read, to be safe.
+
 @csrf.exempt
-@app.route('/notifications/mark-read', methods=['POST'])
 @app.route('/notifications/mark_read', methods=['POST'])
 def notifications_mark_read():
     if 'user_id' not in session:
         return jsonify({"ok": False}), 401
     session['_notif_seen_at'] = datetime.utcnow().isoformat()
     return jsonify({"ok": True})
-
-
-
-
 
 
 
@@ -708,9 +699,6 @@ def confirm_transaction():
         "amount": round(total_amount, 2),
         "date": transaction.date
     })
-
-
-
 
 
 
@@ -1280,5 +1268,4 @@ def upload_receipt():
 
 
 if __name__ == "__main__":
-    app.run(debug=False)
-
+    app.run(debug=True)

@@ -381,7 +381,9 @@ document.addEventListener("DOMContentLoaded", () => {
               ${avatar(it.sender_pic)}
               <div class="min-w-0">
                 <p class="text-sm text-[#0c1c17] truncate"><span class="font-medium">${it.sender_name || "Someone"}</span> sent you a friend request</p>
-                <p class="text-[11px] text-gray-500">${fmtAgo(it.created_at)}</p>
+                <p class="text-[11px] text-gray-500">
+                  <time class="notif-time" datetime="${it.created_at}">${fmtAgo(it.created_at)}</time>
+                </p>
               </div>
             </div>
             <div class="flex gap-1 shrink-0">
@@ -390,14 +392,20 @@ document.addEventListener("DOMContentLoaded", () => {
             </div>
           </div>`;
       }
+    
       if (it.type === "group_invite") {
         return `
           <div class="notif-item flex items-center justify-between px-4 py-2" data-kind="ginvite" data-id="${it.invite_id}">
             <div class="flex items-center gap-2 min-w-0">
               ${avatar(it.inviter_pic)}
               <div class="min-w-0">
-                <p class="text-sm text-[#0c1c17] truncate"><span class="font-medium">${it.inviter_name || "Someone"}</span> invited you to <span class="font-medium">${it.group_name || "a group"}</span></p>
-                <p class="text-[11px] text-gray-500">${fmtAgo(it.created_at)}</p>
+                <p class="text-sm text-[#0c1c17] truncate">
+                  <span class="font-medium">${it.inviter_name || "Someone"}</span> invited you to
+                  <span class="font-medium">${it.group_name || "a group"}</span>
+                </p>
+                <p class="text-[11px] text-gray-500">
+                  <time class="notif-time" datetime="${it.created_at}">${fmtAgo(it.created_at)}</time>
+                </p>
               </div>
             </div>
             <div class="flex gap-1 shrink-0">
@@ -406,28 +414,52 @@ document.addEventListener("DOMContentLoaded", () => {
             </div>
           </div>`;
       }
+    
       return `
         <div class="px-4 py-3">
           <p class="text-sm text-[#0c1c17]">New notification</p>
-          ${it.created_at ? `<p class="text-[11px] text-gray-500">${fmtAgo(it.created_at)}</p>` : ""}
+          ${it.created_at ? `
+            <p class="text-[11px] text-gray-500">
+              <time class="notif-time" datetime="${it.created_at}">${fmtAgo(it.created_at)}</time>
+            </p>` : ""}
         </div>`;
     }
+    
 
-    async function loadList() {
-      listEl.innerHTML = `<div class="px-4 py-6 text-sm text-gray-500">Loading…</div>`;
-      try {
-        const r = await fetch("/notifications/list");
-        if (!r.ok) throw 0;
-        const items = await r.json();
-        if (!Array.isArray(items) || items.length === 0) {
-          listEl.innerHTML = `<div class="px-4 py-6 text-sm text-gray-500">No new notifications</div>`;
-          return;
-        }
-        listEl.innerHTML = items.map(renderItem).join("");
-      } catch {
-        listEl.innerHTML = `<div class="px-4 py-6 text-sm text-red-600">Failed to load notifications.</div>`;
-      }
+    let __notifTicker = null; 
+
+async function loadList() {
+  listEl.innerHTML = `<div class="px-4 py-6 text-sm text-gray-500">Loading…</div>`;
+  try {
+    const r = await fetch("/notifications/list");
+    if (!r.ok) throw 0;
+
+    const items = await r.json();
+    if (!Array.isArray(items) || items.length === 0) {
+      listEl.innerHTML = `<div class="px-4 py-6 text-sm text-gray-500">No new notifications</div>`;
+      if (__notifTicker) { clearInterval(__notifTicker); __notifTicker = null; }
+      return;
     }
+
+    listEl.innerHTML = items.map(renderItem).join("");
+
+    const tick = () => {
+      listEl.querySelectorAll(".notif-time").forEach(t => {
+        const iso = t.getAttribute("datetime");
+        if (iso) t.textContent = fmtAgo(iso);
+      });
+    };
+    tick(); 
+    if (__notifTicker) clearInterval(__notifTicker);
+    __notifTicker = setInterval(tick, 30_000); 
+
+  } catch {
+    listEl.innerHTML = `<div class="px-4 py-6 text-sm text-red-600">Failed to load notifications.</div>`;
+    if (__notifTicker) { clearInterval(__notifTicker); __notifTicker = null; }
+  }
+}
+
+    
 
     async function post(url, body, { asJson = false, asForm = false } = {}) {
       const init = { method: "POST" };
@@ -668,3 +700,4 @@ document.querySelectorAll(".select-plan").forEach((btn) => {
     }
   });
 });
+

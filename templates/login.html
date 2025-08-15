@@ -42,74 +42,57 @@
           {% endif %}
           <!-- Sign In Form -->
           <form action="/login" method="POST" class="space-y-4" autocomplete="on">
-  
-            <!-- Dummy fields to block aggressive autofill -->
-            <input type="text"
-                   name="fake_username"
-                   id="fake_username"
-                   autocomplete="off"
+            <!-- Dummy fields (keep as-is) -->
+            <input type="text" name="fake_username" autocomplete="off"
                    style="position:absolute; left:-9999px; width:1px; height:1px; overflow:hidden;">
-            
-            <input type="password"
-                   name="fake_password"
-                   id="fake_password"
-                   autocomplete="off"
+            <input type="password" name="fake_password" autocomplete="off"
                    style="position:absolute; left:-9999px; width:1px; height:1px; overflow:hidden;">
           
             <!-- Email -->
             <label class="block">
               <p class="text-[#0c1c17] font-medium mb-2">Email Address</p>
-              <input type="email"
-                     name="email"
-                     placeholder="Enter your email"
-                     autocomplete="username"
-                     required
-                     class="form-input w-full rounded-lg bg-[#e6f4ef] h-14 px-4 placeholder:text-[#4a6a80] border-none focus:ring-0">
+              <input id="email"
+                type="email"
+                name="email"
+                placeholder="Enter your email"
+                autocomplete="username"
+                autocapitalize="none"
+                autocorrect="off"
+                spellcheck="false"
+                required
+                class="form-input w-full rounded-lg bg-[#e6f4ef] h-14 px-4 placeholder:text-[#4a6a80] border-none focus:ring-0">
             </label>
           
             <!-- Password -->
-            <label class="block">
+            <label class="block mb-4">
               <p class="text-[#0c1c17] font-medium mb-2">Password</p>
-              <input type="password"
-                     name="password"
-                     placeholder="Enter your password"
-                     autocomplete="current-password"
-                     required
-                     class="form-input w-full rounded-lg bg-[#e6f4ef] h-14 px-4 placeholder:text-[#4a6a80] border-none focus:ring-0">
+              <input id="password"
+                type="password"
+                name="password"
+                placeholder="Enter your password"
+                autocomplete="current-password"
+                autocapitalize="none"
+                autocorrect="off"
+                spellcheck="false"
+                required
+                class="form-input w-full rounded-lg bg-[#e6f4ef] h-14 px-4 placeholder:text-[#4a6a80] border-none focus:ring-0">
             </label>
           
-          </form>
-          
-
-            <!-- Remember + Forgot -->
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-3">
-                <!-- real checkbox (hidden) -->
-                <input id="remember" name="remember" type="checkbox" class="sr-only peer" />
-
-                <!-- track + knob (pseudo-element) -->
-                <label for="remember"
-                  class="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-300 transition
-                         peer-checked:bg-emerald-600 cursor-pointer
-                         after:content-[''] after:absolute after:left-0.5 after:h-5 after:w-5
-                         after:rounded-full after:bg-white after:shadow after:transition-transform
-                         after:translate-x-0 peer-checked:after:translate-x-5">
-                </label>
-
-                <label for="remember" class="text-sm text-gray-700 cursor-pointer">Remember me</label>
-              </div>
-
-              <a href="/forgot-password" class="text-sm text-[#46a080] underline">Forgot Password?</a>
+            <!-- Remember me + Forgot -->
+            <div class="flex items-center justify-between mb-6">
+              <label class="flex items-center">
+                <input id="remember" type="checkbox" name="remember" class="mr-2 h-5 w-5">
+                Remember me
+              </label>
+              <a href="/forgot-password" class="text-sm text-[#019863] hover:underline">Forgot Password?</a>
             </div>
-
-            <!-- Submit -->
-            <button
-              type="submit"
-              class="w-full h-12 bg-[#019863] text-[#f8fcfa] font-bold rounded-lg hover:bg-[#017f53] transition"
-            >
+          
+            <button type="submit"
+                    class="w-full bg-[#019863] text-white rounded-lg py-3 font-medium hover:bg-[#017f53]">
               Sign In
             </button>
           </form>
+          
 
           <!-- Sign up link -->
           <p class="text-[#46a080] text-sm text-center mt-4">
@@ -119,5 +102,29 @@
         </div>
       </main>
     </div>
+    <script>
+      // Toggle autocomplete behavior based on "Remember me"
+      document.addEventListener('DOMContentLoaded', () => {
+        const remember = document.getElementById('remember');
+        const email = document.getElementById('email');
+        const password = document.getElementById('password');
+        const form = email.closest('form');
+    
+        function applyRememberState(remembered) {
+          if (remembered) {
+            form.setAttribute('autocomplete', 'on');
+            email.setAttribute('autocomplete', 'username');
+            password.setAttribute('autocomplete', 'current-password');
+          } else {
+            form.setAttribute('autocomplete', 'off');
+            email.setAttribute('autocomplete', 'off');
+            password.setAttribute('autocomplete', 'off');
+          }
+        }
+    
+        applyRememberState(remember.checked);
+        remember.addEventListener('change', () => applyRememberState(remember.checked));
+      });
+    </script>
   </body>
 </html>
