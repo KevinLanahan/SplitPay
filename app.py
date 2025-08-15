@@ -50,10 +50,8 @@ app.config.update(
 csrf = CSRFProtect(app)
 db.init_app(app)
 migrate = Migrate(app, db)  
-with app.app_context():
-    db.create_all()
 
-migrate = Migrate(app, db)
+
 
 # Allowed file extensions
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif"}
@@ -167,9 +165,6 @@ def forgot():
             </body>
             </html>
             """
-
-
-            send_email(user.email, "SplitPay Password Reset", html)
 
             send_email(user.email, "SplitPay Password Reset", html)
 
