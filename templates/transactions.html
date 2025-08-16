@@ -1,0 +1,163 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>History • SplitPay</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+</head>
+<body class="bg-[#f8fcfa]">
+  <!-- HEADER -->
+  <header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-b-[#e6f4ef] px-10 py-3">
+    <div class="flex items-center gap-4 text-[#0c1c17]">
+      <div class="size-4">
+        <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path fill-rule="evenodd" clip-rule="evenodd"
+                d="M24 4H42V17.3333V30.6667H24V44H6V30.6667V17.3333H24V4Z"
+                fill="currentColor"></path>
+        </svg>
+      </div>
+      <h2 class="text-[#0c1c17] text-lg font-bold tracking-tight">SplitPay</h2>
+    </div>
+
+    <div class="flex items-center gap-8">
+      <nav class="flex gap-9 text-sm font-medium text-[#0c1c17]">
+        <a href="/">Home</a>
+        <a href="/profile">Profile</a>
+        <a href="/friends">Friends</a>
+        <a href="/billing">Billing</a>
+        <a href="/history" class="text-[#019863] font-bold">History</a>
+        <a href="/my_invites">Group Invites</a>
+      </nav>
+
+      <div class="flex items-center gap-4">
+        <div class="relative" id="notif-root">
+          <button id="notif-btn" type="button"
+                  class="relative inline-flex items-center justify-center rounded-full p-2 bg-[#e6f4ef] hover:bg-[#d3ece3] transition">
+            <svg xmlns="http://www.w3.org/2000/svg" class="size-5 text-[#0c1c17]" fill="currentColor" viewBox="0 0 256 256">
+              <path d="M221.8,175.94C216.25,166.38,208,139.33,208,104a80,80,0,1,0-160,0c0,35.34-8.26,62.38-13.81,71.94A16,16,0,0,0,48,200H88.81a40,40,0,0,0,78.38,0H208a16,16,0,0,0,13.8-24.06ZM128,216a24,24,0,0,1-22.62-16h45.24A24,24,0,0,1,128,216Z"/>
+            </svg>
+            <span id="notif-badge"
+                  class="absolute -top-1 -right-1 min-w-5 h-5 px-1.5 rounded-full bg-red-600 text-white text-[11px] font-bold leading-5 text-center hidden"></span>
+          </button>
+
+          <div id="notif-panel"
+               class="hidden absolute right-0 mt-2 w-96 rounded-xl bg-white border border-[#e6f4ef] shadow-xl overflow-hidden">
+            <div class="flex items-center justify-between px-4 py-3 border-b">
+              <h4 class="text-sm font-bold text-[#0c1c17]">Notifications</h4>
+              <button id="notif-mark-read" class="text-xs font-semibold text-[#019863] hover:opacity-80">
+                Mark all as read
+              </button>
+            </div>
+            <div id="notif-list" class="max-h-80 overflow-auto divide-y"></div>
+            <div class="p-3 border-t text-right">
+              <a href="/my_invites" class="text-sm font-semibold text-[#019863] hover:opacity-80">View invites</a>
+              <span class="mx-1 text-gray-300">•</span>
+              <a href="/friends" class="text-sm font-semibold text-[#019863] hover:opacity-80">Friend requests</a>
+            </div>
+          </div>
+        </div>
+
+        <a href="/logout" class="px-4 py-2 bg-[#019863] text-white rounded-lg text-sm font-bold hover:bg-[#017f53] transition">
+          Log Out
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT -->
+  <main class="max-w-3xl mx-auto px-6 py-8">
+    <h2 class="text-2xl font-extrabold tracking-tight mb-6">Transaction History</h2>
+
+    {% if transactions and transactions|length %}
+      <ul id="txn-list" class="space-y-2">
+        {% for txn in transactions %}
+          <li id="txn-{{ txn.id }}">
+            <div class="flex items-center justify-between bg-white border rounded-xl p-4 hover:bg-[#f2fbf7] transition">
+              <!-- LEFT: amount + desc + date (clickable to view) -->
+              <a href="{{ url_for('transaction_detail', txn_id=txn.id) }}" class="min-w-0">
+                <p class="font-semibold truncate">
+                  ${{ '%.2f'|format(txn.amount or 0) }}
+                  <span class="text-gray-600">
+                    — {{ (txn.description.splitlines()[0] if txn.description) or 'Transaction' }}
+                  </span>
+                </p>
+                <p class="text-xs text-gray-500 mt-1">
+                  <time datetime="{{ txn.date }}">{{ txn.date }}</time>
+                </p>
+              </a>
+
+              <!-- RIGHT: actions -->
+              <div class="flex items-center gap-3 shrink-0">
+                <a href="{{ url_for('transaction_detail', txn_id=txn.id) }}"
+                   class="text-[#019863] text-sm font-bold">View</a>
+
+                <!-- visible delete button (AJAX) -->
+                <button type="button"
+                        class="delete-btn text-red-600 text-sm font-bold hover:underline"
+                        data-id="{{ txn.id }}"
+                        aria-label="Delete transaction {{ txn.id }}">✕</button>
+
+                <!-- no-JS fallback -->
+                <form method="POST"
+                      action="{{ url_for('delete_transaction', txn_id=txn.id) }}"
+                      onsubmit="return confirm('Delete this transaction?');"
+                      class="hidden">
+                  <button type="submit" aria-hidden="true">delete</button>
+                </form>
+              </div>
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p id="empty-state" class="text-gray-600">No transactions yet.</p>
+    {% endif %}
+  </main>
+
+  <!-- JS: instant delete via fetch(), graceful fallback if it fails -->
+  <script>
+    document.addEventListener('click', async (e) => {
+      const btn = e.target.closest('.delete-btn');
+      if (!btn) return;
+
+      const id = btn.dataset.id;
+      if (!id) return;
+
+      const ok = confirm('Delete this transaction?');
+      if (!ok) return;
+
+      try {
+        const res = await fetch(`/transactions/${id}/delete`, {
+          method: 'POST',
+          headers: { 'X-Requested-With': 'fetch' }
+        });
+
+        if (res.ok) {
+          // remove row
+          const li = document.getElementById(`txn-${id}`);
+          if (li) li.remove();
+
+          // show empty state if list is empty
+          const list = document.getElementById('txn-list');
+          if (list && list.children.length === 0) {
+            let empty = document.getElementById('empty-state');
+            if (!empty) {
+              empty = document.createElement('p');
+              empty.id = 'empty-state';
+              empty.className = 'text-gray-600';
+              empty.textContent = 'No transactions yet.';
+              list.insertAdjacentElement('afterend', empty);
+            }
+          }
+        } else {
+          // fallback to full post if server refused (e.g., auth)
+          btn.nextElementSibling?.submit();
+        }
+      } catch (_) {
+        // network error -> fallback
+        btn.nextElementSibling?.submit();
+      }
+    });
+  </script>
+</body>
+</html>

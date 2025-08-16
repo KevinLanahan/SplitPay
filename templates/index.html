@@ -50,6 +50,7 @@
             <a href="/profile">Profile</a>
             <a href="/friends">Friends</a>
             <a href="/billing">Billing</a>
+            <a href="/history">History</a>
             <a href="/my_invites">Group Invites</a>
           </nav>
       
@@ -64,10 +65,10 @@
                 <span id="notif-badge"
                       class="absolute -top-1 -right-1 min-w-5 h-5 px-1.5 rounded-full bg-red-600 text-white text-[11px] font-bold leading-5 text-center hidden"></span>
               </button>
-
+      
               <div id="notif-panel"
                 class="hidden absolute right-0 mt-2 w-96 rounded-xl bg-white border border-[#e6f4ef] shadow-xl overflow-hidden">
-
+      
                 <div class="flex items-center justify-between px-4 py-3 border-b">
                   <h4 class="text-sm font-bold text-[#0c1c17]">Notifications</h4>
                   <button id="notif-mark-read" class="text-xs font-semibold text-[#019863] hover:opacity-80">
@@ -82,7 +83,7 @@
                 </div>
               </div>
             </div>
-
+      
             <!-- Log Out Button -->
             <a href="/logout" class="px-4 py-2 bg-[#019863] text-white rounded-lg text-sm font-bold hover:bg-[#017f53] transition">
               Log Out
@@ -90,6 +91,7 @@
           </div>
         </div>
       </header>
+      
 
       <!-- 📄 Main Content -->
       <main class="flex flex-col md:flex-row px-10 py-8 gap-10">
@@ -186,16 +188,25 @@
           <div class="bg-white rounded-lg p-4 shadow-sm border">
             <h3 class="font-bold text-lg mb-2">Transaction History</h3>
             <ul id="transaction-history" class="text-sm space-y-1">
-              {% for txn in transactions %}
-              <li>
-                You were paid ${{ "%.2f"|format(txn.amount) }} on
-                <time class="transaction-time" datetime="{{ txn.date }}Z">{{ txn.date }}Z</time>
-              </li>
-              
+              {% if transactions and transactions|length %}
+                {% for txn in transactions[:10] %}
+                  <li>
+                    <a href="{{ url_for('transactions_page') }}" class="block rounded px-2 py-1 hover:bg-[#e6f4ef] transition">
+
+                      <span class="font-medium">${{ "%.2f"|format(txn.amount) }}</span>
+                      <span class="text-gray-600">
+                        — {{ (txn.description.splitlines()[0] if txn.description) or 'Transaction' }}
+                      </span>
+                      <time class="transaction-time ml-1 text-gray-500 text-xs"
+                            datetime="{{ txn.date }}Z">{{ txn.date }}Z</time>
+                    </a>
+                  </li>
+                {% endfor %}
               {% else %}
                 <li id="no-transactions">No transactions yet</li>
-              {% endfor %}
+              {% endif %}
             </ul>
+            
           </div>
         </aside>
       </main>
@@ -205,3 +216,4 @@
     <script src="{{ url_for('static', filename='script.js') }}"></script>
   </body>
 </html>
+

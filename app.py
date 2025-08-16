@@ -1,4 +1,4 @@
-from flask import Flask, request, redirect, render_template, session, url_for, jsonify
+from flask import Flask, abort, request, redirect, render_template, session, url_for, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -199,7 +199,6 @@ def reset_password(token):
 
 
 
-
 @csrf.exempt
 @app.route("/")
 def home():
@@ -209,10 +208,12 @@ def home():
     user = User.query.get(session["user_id"])
     transactions = (
         Transaction.query
-        .filter_by(payer=user.full_name)
+        .filter_by(payer=user.full_name)   # these are “payments to you” in your current logic
         .order_by(Transaction.id.desc())
         .all()
     )
+
+    total_paid_to_you = sum(t.amount or 0 for t in transactions)
 
     return render_template(
         "index.html",
@@ -220,8 +221,10 @@ def home():
         user_full_name=user.full_name,
         friends=user.friends.all(),
         user_groups=[(gm.group, len(gm.group.members)) for gm in user.group_links],
-        transactions=transactions
+        transactions=transactions,
+        total_paid_to_you=round(total_paid_to_you, 2),
     )
+
 
 @app.route("/pricing")
 def pricing():
@@ -285,11 +288,84 @@ def login():
     return render_template('login.html')
 
 
-
 @app.route('/logout')
 def logout():
     session.pop('user_id', None)
     return redirect(url_for('home'))
+
+
+
+
+
+
+@csrf.exempt
+@app.route("/transactions")
+def transactions_page():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    user = User.query.get(session["user_id"])
+    txns = (
+        Transaction.query
+        .filter_by(payer=user.full_name)
+        .order_by(Transaction.id.desc())
+        .limit(50)
+        .all()
+    )
+    return render_template("transactions.html", user=user, transactions=txns)
+
+
+@csrf.exempt
+@app.route("/history")
+def history_redirect():
+    return redirect(url_for("transactions_page"))
+
+
+@app.route("/transactions/<int:txn_id>")
+def transaction_detail(txn_id):
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    txn = Transaction.query.get_or_404(txn_id)
+    me = User.query.get(session["user_id"])
+    if txn.payer != me.full_name:
+        abort(403)
+
+    # Parse itemized lines from txn.description
+    items = []
+    for line in (txn.description or "").splitlines():
+        m = re.match(r"^(.*?)\s+\(\$(\d+(?:\.\d{2})?)\)\s+split between:\s*(.*)$", line)
+        if m:
+            name, price, owners = (
+                m.group(1).strip(),
+                float(m.group(2)),
+                [o.strip() for o in m.group(3).split(",") if o.strip()],
+            )
+            items.append({"name": name, "price": price, "owners": owners})
+
+    return render_template("transactions.html", txn=txn, items=items)
+
+
+@csrf.exempt
+@app.route("/transactions/<int:txn_id>/delete", methods=["POST"])
+def delete_transaction(txn_id):
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    txn = Transaction.query.get_or_404(txn_id)
+    me = User.query.get(session["user_id"])
+
+    if txn.payer != me.full_name:
+        abort(403)
+
+    db.session.delete(txn)
+    db.session.commit()
+
+    if request.headers.get("X-Requested-With") == "fetch":
+        return ("", 204)
+
+    return redirect(url_for("transactions_page"))
+
 
 
 
@@ -299,32 +375,67 @@ def friends():
     if 'user_id' not in session:
         return redirect(url_for('login'))
 
-    user = User.query.get(session['user_id'])
-    if not user:
+    me = User.query.get(session['user_id'])
+    if not me:
         return redirect(url_for('login'))
 
+    msg = None
     search_result = None
+
     if request.method == 'POST':
-        search_username = request.form.get('search_username')
+        # 1) Search by username
+        search_username = request.form.get('search_username', '').strip()
         if search_username:
             search_result = User.query.filter_by(username=search_username).first()
 
+        # 2) Send request by hidden id
         to_id = request.form.get('send_request_to_id')
         if to_id:
-            to_user = User.query.get(int(to_id))
-            if to_user and to_user not in user.friends:
-                friend_request = FriendRequest(from_user_id=user.id, to_user_id=to_user.id)
-                db.session.add(friend_request)
-                db.session.commit()
+            try:
+                to_user = User.query.get(int(to_id))
+            except Exception:
+                to_user = None
 
-    pending_requests = FriendRequest.query.filter_by(to_user_id=user.id, status='pending').all()
+            # Guards
+            if not to_user:
+                msg = "User not found."
+            elif to_user.id == me.id:
+                msg = "You can’t send a friend request to yourself."
+            elif to_user in me.friends:
+                msg = "You’re already friends."
+            else:
+                # Prevent duplicate pending requests (both directions)
+                existing = FriendRequest.query.filter_by(
+                    from_user_id=me.id, to_user_id=to_user.id, status='pending'
+                ).first()
+                reverse = FriendRequest.query.filter_by(
+                    from_user_id=to_user.id, to_user_id=me.id, status='pending'
+                ).first()
+
+                if existing or reverse:
+                    msg = "A pending request already exists."
+                else:
+                    try:
+                        fr = FriendRequest(from_user_id=me.id, to_user_id=to_user.id, status='pending')
+                        db.session.add(fr)
+                        db.session.commit()
+                        msg = "Friend request sent!"
+                    except Exception as e:
+                        db.session.rollback()
+                        # Log the real cause in server logs
+                        print("Friend request error:", repr(e))
+                        msg = "Couldn’t send request. Please try again."
+
+    pending_requests = FriendRequest.query.filter_by(to_user_id=me.id, status='pending').all()
+
     return render_template(
-    "friends.html",
-    user=user,  
-    friends=user.friends.all(),
-    search_result=search_result,
-    pending_requests=pending_requests
-)
+        "friends.html",
+        user=me,
+        friends=me.friends.all(),
+        search_result=search_result,
+        pending_requests=pending_requests,
+        message=msg,
+    )
 
 
 
@@ -348,7 +459,6 @@ def accept_request(request_id):
 
 
 
-# === Notifications helpers ===
 def notification_count_for(user_id: int) -> int:
     if not user_id:
         return 0
@@ -411,7 +521,7 @@ def _pending_notifications(user_id: int) -> list[dict]:
     for gi, group, inviter in gis:
         created = getattr(gi, "created_at", None)
         items.append({
-            "invite_id": gi.id,                  # what script.js sends to accept/decline
+            "invite_id": gi.id,                  
             "type": "group_invite",
             "group_name": group.name,
             "inviter_name": inviter.full_name or inviter.username,
@@ -981,10 +1091,6 @@ def group_details():
 
 
 
-
-
-
-
 @app.route('/create_group', methods=['POST'])
 @csrf.exempt  
 def create_group():
@@ -1021,27 +1127,6 @@ def leave_group():
     GroupMember.query.filter_by(group_id=group_id, user_id=user_id).delete()
     db.session.commit()
     return jsonify({"message": "You left the group."})
-
-
-
-@app.route('/delete_group', methods=['POST'])
-@csrf.exempt
-def delete_group():
-    data = request.get_json()
-    group_name = data.get("group")
-
-    group = Group.query.filter_by(name=group_name).first()
-    if not group:
-        return jsonify({"error": "Group not found"}), 404
-
-    if group.creator_id != session.get("user_id"):
-        return jsonify({"error": "Unauthorized"}), 403
-
-    GroupMember.query.filter_by(group_id=group.id).delete()
-    db.session.delete(group)
-    db.session.commit()
-
-    return jsonify({"success": True})
 
 
 
@@ -1093,7 +1178,6 @@ def accept_group_invite():
 
 
     return jsonify({"success": True})
-
 
 
 
@@ -1298,7 +1382,5 @@ def upload_receipt():
         "total_amount": total_amount
     }
 
-
-
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=False)

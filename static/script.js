@@ -542,9 +542,8 @@ async function loadList() {
     setInterval(refreshCount, 30000);
   })();
 
-  // ===========================
-  //   Transaction time → local
-  // ===========================
+
+  
   (function formatTransactionTimes() {
     const fmtOptions = {
       year: "numeric",
@@ -558,7 +557,7 @@ async function loadList() {
       let iso = el.getAttribute("datetime") || el.textContent || "";
       iso = iso.trim();
       if (iso && !/[zZ]|[+\-]\d{2}:?\d{2}$/.test(iso)) {
-        iso += "Z"; // treat as UTC if no tz info
+        iso += "Z"; 
       }
       const d = new Date(iso);
       if (!isNaN(d.getTime())) {
@@ -566,29 +565,24 @@ async function loadList() {
       }
     });
   })();
-}); // END DOMContentLoaded
+}); 
 
-// ===========================
-//   Sidebar group helpers
-// ===========================
+
 let openGroupId = null;
 function attachGroupClickListener(li) {
   li.addEventListener("click", async () => {
     const groupId = li.dataset.groupId;
     const panel = document.getElementById("group-panel");
 
-    // If this group is already open, clicking it again will close the panel
     if (openGroupId === groupId && !panel.classList.contains("hidden")) {
       panel.classList.add("hidden");
       panel.innerHTML = "";
       openGroupId = null;
 
-      // (Optional) update aria flags
       document.querySelectorAll(".group-btn").forEach(b => b.setAttribute("aria-expanded", "false"));
       return;
     }
 
-    // Open (or switch to) this group
     openGroupId = groupId;
     document.querySelectorAll(".group-btn").forEach(b => b.setAttribute("aria-expanded", b === li ? "true" : "false"));
 
