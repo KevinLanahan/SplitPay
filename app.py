@@ -9,7 +9,7 @@ from openai import OpenAI
 import stripe, os, re, base64, json, smtplib
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from email.message import EmailMessage
-from sqlalchemy import and_
+from sqlalchemy import and_, or_
 from models import db, User, FriendRequest, Transaction, Group, GroupMember, GroupInvite
 from flask_migrate import Migrate
 
@@ -368,7 +368,6 @@ def delete_transaction(txn_id):
 
 
 
-
 @csrf.exempt
 @app.route('/friends', methods=['GET', 'POST'])
 def friends():
@@ -380,15 +379,24 @@ def friends():
         return redirect(url_for('login'))
 
     msg = None
-    search_result = None
+    search_results = []   # <-- multiple results now
 
     if request.method == 'POST':
-        # 1) Search by username
-        search_username = request.form.get('search_username', '').strip()
-        if search_username:
-            search_result = User.query.filter_by(username=search_username).first()
+        # 1) Search by *full name* (partial, case-insensitive)
+        q = (request.form.get('search_name') or "").strip()
+        if q:
+            # Find up to 10 people whose full_name contains the query
+            matches = (
+                User.query
+                .filter(User.full_name.ilike(f"%{q}%"))
+                .order_by(User.full_name.asc())
+                .limit(10)
+                .all()
+            )
+            # Hide yourself; we’ll still show existing friends (so the UI can say “Already friends” if you want)
+            search_results = [u for u in matches if u.id != me.id]
 
-        # 2) Send request by hidden id
+        # 2) Send request by hidden id (from the “Send Request” button next to a result)
         to_id = request.form.get('send_request_to_id')
         if to_id:
             try:
@@ -396,7 +404,6 @@ def friends():
             except Exception:
                 to_user = None
 
-            # Guards
             if not to_user:
                 msg = "User not found."
             elif to_user.id == me.id:
@@ -404,7 +411,7 @@ def friends():
             elif to_user in me.friends:
                 msg = "You’re already friends."
             else:
-                # Prevent duplicate pending requests (both directions)
+                # Block duplicates in either direction
                 existing = FriendRequest.query.filter_by(
                     from_user_id=me.id, to_user_id=to_user.id, status='pending'
                 ).first()
@@ -422,22 +429,66 @@ def friends():
                         msg = "Friend request sent!"
                     except Exception as e:
                         db.session.rollback()
-                        # Log the real cause in server logs
                         print("Friend request error:", repr(e))
                         msg = "Couldn’t send request. Please try again."
 
-    pending_requests = FriendRequest.query.filter_by(to_user_id=me.id, status='pending').all()
+    # Pending requests *to* me
+    pending_requests = (
+    db.session.query(FriendRequest, User)
+    .join(User, User.id == FriendRequest.from_user_id)
+    .filter(
+        FriendRequest.to_user_id == me.id,
+        FriendRequest.status == 'pending'
+    )
+    .order_by(FriendRequest.id.desc())
+    .all()
+)
 
     return render_template(
         "friends.html",
         user=me,
         friends=me.friends.all(),
-        search_result=search_result,
+        search_results=search_results,   # <-- pass list
         pending_requests=pending_requests,
         message=msg,
     )
 
 
+
+@csrf.exempt
+@app.route("/api/users/search")
+def user_search():
+    if "user_id" not in session:
+        return jsonify([]), 401
+
+    q = (request.args.get("q") or "").strip()
+    if not q:
+        return jsonify([])
+
+    # case-insensitive partial match on full name (and also username as fallback)
+    ilike = f"%{q}%"
+    users = (
+        User.query
+            .filter(or_(User.full_name.ilike(ilike),
+                        User.username.ilike(ilike)))
+            .order_by(User.full_name.asc(), User.username.asc())
+            .limit(12)
+            .all()
+    )
+
+    me_id = session["user_id"]
+    out = []
+    for u in users:
+        if u.id == me_id:
+            continue
+        out.append({
+            "id": u.id,
+            "full_name": u.full_name or "",
+            "username": u.username or "",
+            "avatar": (url_for('static', filename=f'profile_pics/{u.profile_pic}')
+                       if u.profile_pic else url_for('static', filename='profile_pics/default.jpg')),
+        })
+    return jsonify(out)
 
 
 @csrf.exempt
@@ -506,7 +557,6 @@ def _pending_notifications(user_id: int) -> list[dict]:
             "href": url_for('friends'),
         })
 
-    # Group invites -> type: 'group_invite'
     gis = (
         db.session.query(GroupInvite, Group, User)
         .join(Group, Group.id == GroupInvite.group_id)
@@ -1383,4 +1433,4 @@ def upload_receipt():
     }
 
 if __name__ == "__main__":
-    app.run(debug=False)
+    app.run(debug=True)

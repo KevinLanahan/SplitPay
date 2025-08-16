@@ -6,26 +6,21 @@
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Noto+Sans:wght@400;500;700;900&display=swap" />
   <style>
-    body {
-      font-family: Manrope, 'Noto Sans', sans-serif;
-      background-color: #f8fcfa;
-    }
+    body { font-family: Manrope, 'Noto Sans', sans-serif; background-color: #f8fcfa; }
   </style>
 </head>
 <body class="min-h-screen flex flex-col">
-  <!-- 🟢 Navbar (Consistent with profile/home) -->
+  <!-- Header / Navbar -->
   <header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-b-[#e6f4ef] px-10 py-3">
     <div class="flex items-center gap-4 text-[#0c1c17]">
       <div class="size-4">
         <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path fill-rule="evenodd" clip-rule="evenodd"
-                d="M24 4H42V17.3333V30.6667H24V44H6V30.6667V17.3333H24V4Z"
-                fill="currentColor"></path>
+          <path fill-rule="evenodd" clip-rule="evenodd" d="M24 4H42V17.3333V30.6667H24V44H6V30.6667V17.3333H24V4Z" fill="currentColor"></path>
         </svg>
       </div>
       <h2 class="text-[#0c1c17] text-lg font-bold tracking-tight">SplitPay</h2>
     </div>
-  
+
     <div class="flex items-center gap-8">
       <nav class="flex gap-9 text-sm font-medium text-[#0c1c17]">
         <a href="/">Home</a>
@@ -35,27 +30,20 @@
         <a href="/history">History</a>
         <a href="/my_invites">Group Invites</a>
       </nav>
-  
+
       <div class="flex items-center gap-4">
-        <!-- Bell with badge + dropdown (JS fills it) -->
         <div class="relative" id="notif-root">
-          <button id="notif-btn" type="button"
-                  class="relative inline-flex items-center justify-center rounded-full p-2 bg-[#e6f4ef] hover:bg-[#d3ece3] transition">
+          <button id="notif-btn" type="button" class="relative inline-flex items-center justify-center rounded-full p-2 bg-[#e6f4ef] hover:bg-[#d3ece3] transition">
             <svg xmlns="http://www.w3.org/2000/svg" class="size-5 text-[#0c1c17]" fill="currentColor" viewBox="0 0 256 256">
               <path d="M221.8,175.94C216.25,166.38,208,139.33,208,104a80,80,0,1,0-160,0c0,35.34-8.26,62.38-13.81,71.94A16,16,0,0,0,48,200H88.81a40,40,0,0,0,78.38,0H208a16,16,0,0,0,13.8-24.06ZM128,216a24,24,0,0,1-22.62-16h45.24A24,24,0,0,1,128,216Z"/>
             </svg>
-            <span id="notif-badge"
-                  class="absolute -top-1 -right-1 min-w-5 h-5 px-1.5 rounded-full bg-red-600 text-white text-[11px] font-bold leading-5 text-center hidden"></span>
+            <span id="notif-badge" class="absolute -top-1 -right-1 min-w-5 h-5 px-1.5 rounded-full bg-red-600 text-white text-[11px] font-bold leading-5 text-center hidden"></span>
           </button>
-  
-          <div id="notif-panel"
-            class="hidden absolute right-0 mt-2 w-96 rounded-xl bg-white border border-[#e6f4ef] shadow-xl overflow-hidden">
-  
+
+          <div id="notif-panel" class="hidden absolute right-0 mt-2 w-96 rounded-xl bg-white border border-[#e6f4ef] shadow-xl overflow-hidden">
             <div class="flex items-center justify-between px-4 py-3 border-b">
               <h4 class="text-sm font-bold text-[#0c1c17]">Notifications</h4>
-              <button id="notif-mark-read" class="text-xs font-semibold text-[#019863] hover:opacity-80">
-                Mark all as read
-              </button>
+              <button id="notif-mark-read" class="text-xs font-semibold text-[#019863] hover:opacity-80">Mark all as read</button>
             </div>
             <div id="notif-list" class="max-h-80 overflow-auto divide-y"></div>
             <div class="p-3 border-t text-right">
@@ -65,76 +53,148 @@
             </div>
           </div>
         </div>
-  
-        <!-- Log Out Button -->
-        <a href="/logout" class="px-4 py-2 bg-[#019863] text-white rounded-lg text-sm font-bold hover:bg-[#017f53] transition">
-          Log Out
-        </a>
+
+        <a href="/logout" class="px-4 py-2 bg-[#019863] text-white rounded-lg text-sm font-bold hover:bg-[#017f53] transition">Log Out</a>
       </div>
     </div>
   </header>
-  
 
-  <!-- 👥 Friends Section -->
+  <!-- Main -->
   <main class="flex flex-col max-w-3xl w-full mx-auto py-10 px-6">
     <h2 class="text-[32px] font-bold text-[#0c1c17] mb-6">Friends</h2>
 
-    <!-- Friend List -->
+    <!-- Your Friends -->
     <h3 class="text-xl font-bold text-[#0c1c17] mb-2">Your Friends</h3>
     {% if friends %}
       <ul class="space-y-4 mb-8">
         {% for friend in friends %}
-        <li class="flex items-center gap-4 bg-[#f8fcfa] px-4 py-3 rounded shadow-sm border">
-          <img src="{{ url_for('static', filename='profile_pics/' ~ (friend.profile_pic if friend.profile_pic else 'default.jpg')) }}" alt="Profile Picture" class="h-14 w-14 rounded-full object-cover" />
-          <div>
-            <p class="text-[#0c1c17] font-medium">{{ friend.full_name }}</p>
-            <p class="text-[#46a080] text-sm">@{{ friend.username }}</p>
-          </div>
-        </li>
+          <li class="flex items-center gap-4 bg-[#f8fcfa] px-4 py-3 rounded shadow-sm border">
+            <img src="{{ url_for('static', filename='profile_pics/' ~ (friend.profile_pic if friend.profile_pic else 'default.jpg')) }}" alt="Profile Picture" class="h-14 w-14 rounded-full object-cover" />
+            <div>
+              <p class="text-[#0c1c17] font-medium">{{ friend.full_name }}</p>
+              <p class="text-[#46a080] text-sm">@{{ friend.username }}</p>
+            </div>
+          </li>
         {% endfor %}
       </ul>
     {% else %}
       <p class="text-[#888] mb-6">You have no friends added yet.</p>
     {% endif %}
 
-    <!-- Search + Request -->
+    <!-- Search + Request (server-side form) -->
     <h3 class="text-xl font-bold text-[#0c1c17] mb-2">Send a Friend Request</h3>
-    <form method="POST" class="flex flex-col sm:flex-row gap-3 mb-8">
-      <input type="text" name="search_username" placeholder="Search by username" required class="form-input rounded-lg bg-[#e6f4ef] px-4 py-2 w-full sm:w-auto flex-grow" />
-      <button type="submit" class="bg-[#019863] text-white rounded-lg px-4 py-2 text-sm font-semibold">Search</button>
+    <form class="mb-6" method="POST">
+      <label class="block text-sm font-semibold mb-2">Find friends by name</label>
+      <input
+        type="text"
+        name="search_name"
+        placeholder="Type a full name…"
+        class="w-full rounded-lg border px-3 py-2"
+        autocomplete="off"
+        required
+      />
+      <button class="mt-3 px-4 py-2 rounded bg-[#019863] text-white text-sm font-semibold">Search</button>
     </form>
 
-    {% if search_result %}
-      <div class="bg-white rounded border p-4 mb-6">
-        <p class="mb-2">Found user: <strong>{{ search_result.full_name }}</strong> (@{{ search_result.username }})</p>
+    {% if search_results %}
+  <ul class="space-y-2 mb-6">
+    {% for u in search_results %}
+      <li class="flex items-center justify-between bg-white border rounded-xl p-3">
+        <div>
+          <p class="font-medium text-[#0c1c17]">{{ u.full_name }}</p>
+          <p class="text-sm text-gray-500">@{{ u.username }}</p>
+        </div>
         <form method="POST">
-          <input type="hidden" name="send_request_to_id" value="{{ search_result.id }}" />
-          <button type="submit" class="bg-[#e6f4ef] text-[#0c1c17] rounded px-4 py-2 text-sm font-medium">Send Request</button>
+          <input type="hidden" name="send_request_to_id" value="{{ u.id }}">
+          <button class="px-3 py-1.5 rounded bg-[#019863] text-white text-sm font-semibold">Send Request</button>
         </form>
-      </div>
-    {% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+{% endif %}
+
 
     <!-- Pending Requests -->
     <h3 class="text-xl font-bold text-[#0c1c17] mb-2">Pending Friend Requests</h3>
     {% if pending_requests %}
-      <ul class="space-y-4">
-        {% for request in pending_requests %}
-        <li class="flex justify-between items-center bg-[#f8fcfa] px-4 py-3 rounded border">
+    <ul class="space-y-4">
+      {% for fr, sender in pending_requests %}
+        <li class="flex justify-between items-center bg-white border rounded-xl p-3">
           <div>
-            <p class="text-[#0c1c17] font-medium">{{ request.from_user.full_name }}</p>
-            <p class="text-[#46a080] text-sm">@{{ request.from_user.username }}</p>
+            <p class="text-[#0c1c17] font-medium">{{ sender.full_name }}</p>
+            <p class="text-[#4a80a0] text-sm">@{{ sender.username }}</p>
           </div>
-          <form action="{{ url_for('accept_request', request_id=request.id) }}" method="post">
-            <button type="submit" class="bg-[#e6f4ef] text-[#0c1c17] px-4 py-2 rounded text-sm font-medium">Accept</button>
-          </form>
-        </li>
-        {% endfor %}
-      </ul>
-    {% else %}
-      <p class="text-[#888]">No pending requests.</p>
-    {% endif %}
     
+          <div class="flex gap-2">
+            <form method="POST" action="{{ url_for('accept_request', request_id=fr.id) }}">
+              <button class="px-3 py-1.5 rounded bg-[#019863] text-white text-sm font-semibold">Accept</button>
+            </form>
+            <form method="POST" action="{{ url_for('decline_friend_request', request_id=fr.id) }}">
+              <button class="px-3 py-1.5 rounded bg-red-600 text-white text-sm font-semibold">Decline</button>
+            </form>
+          </div>
+        </li>
+      {% endfor %}
+    </ul>
+      {% else %}
+        <p class="text-[#888]">No pending requests.</p>
+      {% endif %}
   </main>
-  <script src="{{ url_for('static', filename='script.js') }}"></script>
+
+  <!-- Optional progressive enhancement (only works if /search_users and /send_friend_request exist) -->
+  <script>
+    (function () {
+      const formInput = document.querySelector('input[name="search_name"]');
+      const resultsUL = document.createElement('ul');
+      resultsUL.className = 'space-y-2 mb-6';
+      formInput?.closest('form')?.insertAdjacentElement('afterend', resultsUL);
+
+      let t = null;
+      if (formInput && window.fetch) {
+        formInput.addEventListener('input', () => {
+          clearTimeout(t);
+          const q = formInput.value.trim();
+          if (!q) { resultsUL.innerHTML = ''; return; }
+          t = setTimeout(async () => {
+            try {
+              const res = await fetch(`/search_users?q=${encodeURIComponent(q)}`);
+              if (!res.ok) return; // silently bail if endpoint isn't there
+              const users = await res.json();
+              resultsUL.innerHTML = users.map(u => `
+                <li class="flex items-center justify-between bg-white border rounded-xl p-3">
+                  <div>
+                    <div class="font-semibold text-[#0c1c17]">${u.full_name}</div>
+                    <div class="text-sm text-gray-500">@${u.username}</div>
+                  </div>
+                  <button data-id="${u.id}" class="send-fr px-3 py-1.5 rounded bg-[#019863] text-white text-sm font-semibold">Send Request</button>
+                </li>
+              `).join('');
+            } catch { /* ignore */ }
+          }, 200);
+        });
+
+        resultsUL.addEventListener('click', async (e) => {
+          const btn = e.target.closest('.send-fr');
+          if (!btn) return;
+          const toId = btn.getAttribute('data-id');
+          btn.disabled = true;
+          try {
+            const res = await fetch('/send_friend_request', {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({ to_id: toId })
+            });
+            if (!res.ok) { btn.textContent = 'Failed'; btn.classList.add('bg-red-600'); return; }
+            const data = await res.json();
+            btn.textContent = data.ok ? 'Sent!' : (data.error || 'Failed');
+            if (!data.ok) btn.classList.add('bg-red-600');
+          } catch {
+            btn.textContent = 'Error';
+            btn.classList.add('bg-red-600');
+          }
+        });
+      }
+    })();
+  </script>
 </body>
 </html>
